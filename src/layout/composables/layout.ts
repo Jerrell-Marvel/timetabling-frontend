@@ -1,22 +1,19 @@
 import { reactive } from 'vue'
 
-// Hanya butuh 2 state: untuk Desktop dan Mobile
 type LayoutState = {
-  staticMenuInactive: boolean
-  mobileMenuActive: boolean
+  staticMenuInactive: boolean // hamburger menu dekstop
+  mobileMenuActive: boolean // hamburger menu mobile
 }
 
 const layoutState = reactive<LayoutState>({
-  staticMenuInactive: false, // Desktop menu (false = terbuka, true = tertutup/menyusut)
-  mobileMenuActive: false, // Mobile menu (false = tertutup, true = terbuka)
+  staticMenuInactive: false,
+  mobileMenuActive: false,
 })
 
 export function useLayout() {
-  // Cek apakah layar saat ini ukuran Desktop (Tailwind 'lg' breakpoint biasanya > 1024px,
-  // tapi kita pakai 991px menyesuaikan bawaan PrimeVue)
   const isDesktop = () => window.innerWidth > 991
 
-  // Fungsi yang dipanggil saat tombol hamburger di Topbar diklik
+  // hamburger diklik
   const toggleMenu = () => {
     if (isDesktop()) {
       layoutState.staticMenuInactive = !layoutState.staticMenuInactive
@@ -25,7 +22,7 @@ export function useLayout() {
     }
   }
 
-  // Fungsi untuk menutup menu di HP (misal saat background hitam diklik)
+  // tutup di mobile
   const hideMobileMenu = () => {
     layoutState.mobileMenuActive = false
   }

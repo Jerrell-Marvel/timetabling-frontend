@@ -2,11 +2,10 @@
 import { computed } from 'vue'
 import AppTopbar from './AppTopbar.vue'
 import AppSidebar from './AppSidebar.vue'
-import { useLayout } from '@/layout/composables/layout'
+import { useLayout } from './composables/layout'
 
 const { layoutState, hideMobileMenu } = useLayout()
 
-// Hitung margin kiri untuk konten utama (Desktop saja)
 const mainContentClass = computed(() => {
   return layoutState.staticMenuInactive ? 'lg:ml-0' : 'lg:ml-64'
 })

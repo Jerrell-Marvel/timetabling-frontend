@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import AppMenuItem from './AppMenuItem.vue'
+import AppMenuItem, { MenuItemType } from './AppMenuItem.vue'
 
-// Menu sudah disesuaikan untuk aplikasi Penjadwalan Kampus
-const model = ref([
+const model = ref<MenuItemType[]>([
   {
     label: 'Penjadwalan',
     items: [

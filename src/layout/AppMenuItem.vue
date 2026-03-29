@@ -1,34 +1,32 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLayout } from '@/layout/composables/layout'
+import { useLayout } from './composables/layout'
 
 const route = useRoute()
 const { layoutState, isDesktop } = useLayout()
 
-// 1. Definisikan tipe data untuk Props
-type MenuItem = {
+export type MenuItemType = {
   label: string
   icon?: string
   to?: string
   url?: string
   target?: string
-  items?: MenuItem[]
+  items?: MenuItemType[]
   visible?: boolean
   disabled?: boolean
   command?: (event: unknown) => void
 }
 
 const props = defineProps<{
-  item: MenuItem
+  item: MenuItemType
   root?: boolean
   index?: number
 }>()
 
-// 2. Logika Dropdown Terbuka/Tertutup (Lokal)
+// accordion kebuka / tutup
 const isExpanded = ref(false)
 
-// 3. Cek apakah menu aktif (berdasarkan Vue Router)
 const isActive = computed(() => {
   console.log('label', props.item.label)
   console.log('path sekarang', route.path)
@@ -42,7 +40,7 @@ const isActive = computed(() => {
     console.log(route.path.startsWith(props.item.to + '/'))
     return route.path === props.item.to || route.path.startsWith(props.item.to + '/')
   }
-  // Jika punya anak, aktif jika salah satu anak aktif
+
   if (props.item.items) {
     console.log('ksdfjlskjfklsdklf')
     return props.item.items.some((child) => child.to && route.path.startsWith(child.to))
@@ -51,7 +49,6 @@ const isActive = computed(() => {
   return false
 })
 
-// 4. Fungsi saat diklik
 const itemClick = (event: Event) => {
   if (props.item.disabled) {
     event.preventDefault()
@@ -67,7 +64,6 @@ const itemClick = (event: Event) => {
     isExpanded.value = !isExpanded.value
     console.log('dksfjlsdjk')
   } else {
-    // Jika di HP dan mengklik link biasa, tutup sidebar otomatis
     if (!isDesktop()) {
       layoutState.mobileMenuActive = false
     }

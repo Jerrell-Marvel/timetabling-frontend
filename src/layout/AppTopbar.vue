@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useLayout } from '@/layout/composables/layout'
 import Button from 'primevue/button'
+import { useLayout } from './composables/layout'
 
 const { toggleMenu } = useLayout()
 </script>

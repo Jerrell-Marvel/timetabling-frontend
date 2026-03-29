@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useLayout } from '@/layout/composables/layout'
 import AppMenu from './AppMenu.vue'
+import { useLayout } from './composables/layout'
 
 const { layoutState } = useLayout()
 </script>
