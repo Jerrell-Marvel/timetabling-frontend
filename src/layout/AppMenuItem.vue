@@ -16,6 +16,7 @@ export type MenuItemType = {
   visible?: boolean
   disabled?: boolean
   command?: (event: unknown) => void
+  adminRequired?: boolean
 }
 
 const props = defineProps<{
@@ -24,28 +25,15 @@ const props = defineProps<{
   index?: number
 }>()
 
-// accordion kebuka / tutup
 const isExpanded = ref(false)
 
 const isActive = computed(() => {
-  console.log('label', props.item.label)
-  console.log('path sekarang', route.path)
-  console.log('to', props.item.to)
-  console.log('sdkjfsdl', route.path.startsWith(props.item.to + '/'))
-
   if (props.item.to) {
-    console.log('herer')
-    console.log(route.path)
-    console.log(props.item.to + '/')
-    console.log(route.path.startsWith(props.item.to + '/'))
     return route.path === props.item.to || route.path.startsWith(props.item.to + '/')
   }
-
   if (props.item.items) {
-    console.log('ksdfjlskjfklsdklf')
     return props.item.items.some((child) => child.to && route.path.startsWith(child.to))
   }
-
   return false
 })
 
@@ -54,15 +42,11 @@ const itemClick = (event: Event) => {
     event.preventDefault()
     return
   }
-
   if (props.item.command) {
     props.item.command({ originalEvent: event, item: props.item })
   }
-
-  // Toggle submenu
   if (props.item.items) {
     isExpanded.value = !isExpanded.value
-    console.log('dksfjlsdjk')
   } else {
     if (!isDesktop()) {
       layoutState.mobileMenuActive = false
