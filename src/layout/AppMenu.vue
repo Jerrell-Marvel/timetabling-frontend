@@ -44,11 +44,11 @@ const menus = ref<MenuItemType[]>([
     items: [
       { label: 'Semester', icon: 'pi pi-fw pi-calendar', to: '/semesters', adminRequired: true },
       { label: 'Program Studi', icon: 'pi pi-fw pi-sitemap', to: '/prodis', adminRequired: true },
-      { label: 'Tipe Ruangan', icon: 'pi pi-fw pi-box', to: '/roomTypes', adminRequired: true },
+      { label: 'Tipe Ruangan', icon: 'pi pi-fw pi-box', to: '/room-types', adminRequired: true },
       {
         label: 'Tipe Aktivitas',
         icon: 'pi pi-fw pi-tags',
-        to: '/activityTypes',
+        to: '/activity-types',
         adminRequired: true,
       },
     ],
