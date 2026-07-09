@@ -11,6 +11,7 @@ import NotFoundView from '@/views/errors/NotFoundView.vue'
 
 // Route modules
 import { masterDataRoutes } from './modules/masterData'
+import { schedulingRoutes } from './modules/scheduling'
 
 // ─────────────────────────────────────────────
 // Route definitions
@@ -45,30 +46,7 @@ const routes: RouteRecordRaw[] = [
       },
 
       // ── Penjadwalan ───────────────────────
-      {
-        path: 'activities',
-        name: 'activities.index',
-        component: () => import('@/views/penjadwalan/ActivitiesView.vue'),
-        meta: { title: 'Input Aktivitas' },
-      },
-      {
-        path: 'settings',
-        name: 'settings.index',
-        component: () => import('@/views/penjadwalan/SettingsView.vue'),
-        meta: { title: 'Pengaturan Penjadwalan' },
-      },
-      {
-        path: 'timetable',
-        name: 'timetable.index',
-        component: () => import('@/views/penjadwalan/TimeTableView.vue'),
-        meta: { title: 'Penjadwalan', requiresAdmin: true },
-      },
-      {
-        path: 'results',
-        name: 'results.index',
-        component: () => import('@/views/penjadwalan/ResultsView.vue'),
-        meta: { title: 'Hasil Penjadwalan' },
-      },
+      ...schedulingRoutes,
 
       // ── Master Data ───────────────────────
       ...masterDataRoutes,
