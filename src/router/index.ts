@@ -9,6 +9,9 @@ import AppLayout from '@/layout/AppLayout.vue'
 import LoginView from '@/views/LoginView.vue'
 import NotFoundView from '@/views/errors/NotFoundView.vue'
 
+// Route modules
+import { masterDataRoutes } from './modules/masterData'
+
 // ─────────────────────────────────────────────
 // Route definitions
 // ─────────────────────────────────────────────
@@ -68,24 +71,7 @@ const routes: RouteRecordRaw[] = [
       },
 
       // ── Master Data ───────────────────────
-      {
-        path: 'lecturers',
-        name: 'lecturers.index',
-        component: () => import('@/views/master-data/LecturersView.vue'),
-        meta: { title: 'Pengajar' },
-      },
-      {
-        path: 'courses',
-        name: 'courses.index',
-        component: () => import('@/views/master-data/CoursesView.vue'),
-        meta: { title: 'Matakuliah' },
-      },
-      {
-        path: 'rooms',
-        name: 'rooms.index',
-        component: () => import('@/views/master-data/RoomsView.vue'),
-        meta: { title: 'Ruangan' },
-      },
+      ...masterDataRoutes,
 
       // ── Pengaturan ────────────────────────
       {
