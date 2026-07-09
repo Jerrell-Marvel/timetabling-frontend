@@ -13,6 +13,7 @@ import NotFoundView from '@/views/errors/NotFoundView.vue'
 import { masterDataRoutes } from './modules/masterData'
 import { schedulingRoutes } from './modules/scheduling'
 import { pengaturanRoutes } from './modules/pengaturan'
+import { userManagementRoutes } from './modules/userManagement'
 
 // ─────────────────────────────────────────────
 // Route definitions
@@ -56,12 +57,7 @@ const routes: RouteRecordRaw[] = [
       ...pengaturanRoutes,
 
       // ── Pengguna ──────────────────────────
-      {
-        path: 'users',
-        name: 'users.index',
-        component: () => import('@/views/UsersView.vue'),
-        meta: { title: 'Pengguna', requiresAdmin: true },
-      },
+      ...userManagementRoutes,
     ],
   },
 

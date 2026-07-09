@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import AppMenuItem, { MenuItemType } from './AppMenuItem.vue'
+import AppMenuItem from './AppMenuItem.vue'
+import type { MenuItemType } from './AppMenuItem.vue'
 
 // Hardcode var admin sementara
 const isAdmin = ref(true)
