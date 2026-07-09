@@ -83,8 +83,8 @@ const router = createRouter({
 // ─────────────────────────────────────────────
 router.beforeEach((to, _from, next) => {
   // TODO: Replace these stubs with Pinia auth store once auth is implemented.
-  const isAuthenticated = false // e.g. useAuthStore().isAuthenticated
-  const isAdmin = false // e.g. useAuthStore().isAdmin
+  const isAuthenticated = true // e.g. useAuthStore().isAuthenticated
+  const isAdmin = true // e.g. useAuthStore().isAdmin
 
   // Guest-only routes (e.g. /login) — redirect authenticated users to home
   if (to.meta.requiresGuest && isAuthenticated) {
