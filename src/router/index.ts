@@ -12,6 +12,7 @@ import NotFoundView from '@/views/errors/NotFoundView.vue'
 // Route modules
 import { masterDataRoutes } from './modules/masterData'
 import { schedulingRoutes } from './modules/scheduling'
+import { pengaturanRoutes } from './modules/pengaturan'
 
 // ─────────────────────────────────────────────
 // Route definitions
@@ -52,30 +53,7 @@ const routes: RouteRecordRaw[] = [
       ...masterDataRoutes,
 
       // ── Pengaturan ────────────────────────
-      {
-        path: 'semesters',
-        name: 'semesters.index',
-        component: () => import('@/views/pengaturan/SemestersView.vue'),
-        meta: { title: 'Semester', requiresAdmin: true },
-      },
-      {
-        path: 'prodis',
-        name: 'prodis.index',
-        component: () => import('@/views/pengaturan/ProdisView.vue'),
-        meta: { title: 'Program Studi', requiresAdmin: true },
-      },
-      {
-        path: 'room-types',
-        name: 'roomTypes.index',
-        component: () => import('@/views/pengaturan/RoomTypesView.vue'),
-        meta: { title: 'Tipe Ruangan', requiresAdmin: true },
-      },
-      {
-        path: 'activity-types',
-        name: 'activityTypes.index',
-        component: () => import('@/views/pengaturan/ActivityTypesView.vue'),
-        meta: { title: 'Tipe Aktivitas', requiresAdmin: true },
-      },
+      ...pengaturanRoutes,
 
       // ── Pengguna ──────────────────────────
       {
