@@ -1,37 +1,64 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ResourceListLayout, ResourceTable } from '@/components/base'
+import type { ResourceColumn } from '@/components/base'
+import { settingsService, semestersService } from '@/services'
+import type { Setting, Semester } from '@/types'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
+const rows = ref<Setting[]>([])
+const semesters = ref<Semester[]>([])
+const loading = ref(false)
+
+const semesterNameById = computed(() => new Map(semesters.value.map((s) => [s.id, s.name])))
+
+const columns = computed<ResourceColumn<Setting>[]>(() => [
+  { field: 'name', header: 'Nama', sortable: true },
+  {
+    field: 'semester_id',
+    header: 'Semester',
+    format: (row) => semesterNameById.value.get(row.semester_id) ?? row.semester_id,
+  },
+])
+
+async function load() {
+  loading.value = true
+  try {
+    const [settings, semesterList] = await Promise.all([
+      settingsService.list(),
+      semestersService.list(),
+    ])
+    rows.value = settings
+    semesters.value = semesterList
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(load)
+
+async function onDelete(row: Setting) {
+  await settingsService.destroy(row.id!)
+  toast.success('Pengaturan berhasil dihapus.')
+  await load()
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-          <i class="pi pi-sliders-h text-xl text-violet-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">Pengaturan Penjadwalan</h1>
-          <p class="text-surface-400 text-xs mt-0.5">Konfigurasi parameter penjadwalan</p>
-        </div>
-      </div>
-      <Button
-        label="Tambah Pengaturan"
-        icon="pi pi-plus"
-        @click="router.push({ name: 'settings.create' })"
-      />
-    </div>
-
-    <!-- Table placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-table text-4xl mb-3 block"></i>
-          <p class="text-sm">Data tabel Pengaturan akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <ResourceListLayout
+    title="Pengaturan Penjadwalan"
+    create-to="/settings/create"
+    create-label="Tambah Pengaturan"
+  >
+    <ResourceTable
+      :rows="rows"
+      :columns="columns"
+      :loading="loading"
+      :actions="['edit', 'delete']"
+      @edit="(row) => router.push({ name: 'settings.edit', params: { id: String(row.id) } })"
+      @delete="onDelete"
+    />
+  </ResourceListLayout>
 </template>

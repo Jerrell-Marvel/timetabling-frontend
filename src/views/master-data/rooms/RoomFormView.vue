@@ -1,46 +1,77 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CRUPage from '@/layout/CRUPage.vue'
+import RoomFormFields from '@/components/rooms/RoomFormFields.vue'
+import { useApiForm } from '@/composables/useApiForm'
+import { roomsService, roomTypesService } from '@/services'
+import type { Room, Option } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const isEdit = computed(() => !!route.params.id)
-const pageTitle = computed(() => (isEdit.value ? 'Edit Ruangan' : 'Tambah Ruangan'))
+const id = computed(() => (route.params.id ? Number(route.params.id) : null))
+const isEdit = computed(() => id.value !== null)
+
+const form = reactive<Room>({
+  code: '',
+  owner: '',
+  campus: '',
+  building: '',
+  floor: '',
+  capacity: 0,
+  parent_id: null,
+  room_type_id: 0,
+  availabilities: [],
+})
+const roomTypeOptions = ref<Option[]>([])
+const parentOptions = ref<Option[]>([])
+const { errors, processing, submit } = useApiForm()
+
+onMounted(async () => {
+  const [types, rooms] = await Promise.all([roomTypesService.list(), roomsService.list()])
+  roomTypeOptions.value = types.map((t) => ({ label: t.name, value: t.id! }))
+  parentOptions.value = rooms
+    .filter((r) => r.id !== id.value)
+    .map((r) => ({ label: r.code, value: r.id! }))
+
+  if (id.value !== null) {
+    const data = await roomsService.get(id.value)
+    Object.assign(form, data)
+  }
+})
+
+async function handleSubmit() {
+  await submit(() =>
+    isEdit.value ? roomsService.update(id.value!, form) : roomsService.create(form),
+  )
+  router.push({ name: 'rooms.index' })
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center gap-3">
+  <CRUPage page="Ruangan" :type="isEdit ? 'Ubah' : 'Buat'" url="/rooms">
+    <template #error>
+      <Message v-if="Object.keys(errors).length" severity="error" :closable="false" class="mb-4">
+        Periksa kembali data yang diisi.
+      </Message>
+    </template>
+
+    <RoomFormFields
+      :model-value="form"
+      :errors="errors"
+      :room-type-options="roomTypeOptions"
+      :parent-options="parentOptions"
+    />
+
+    <div class="flex justify-end gap-2 mt-6">
       <Button
-        icon="pi pi-arrow-left"
-        severity="secondary"
+        label="Batal"
         text
-        rounded
+        severity="secondary"
         @click="router.push({ name: 'rooms.index' })"
       />
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-          <i class="pi pi-file-edit text-xl text-orange-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">{{ pageTitle }}</h1>
-          <p class="text-surface-400 text-xs mt-0.5">
-            {{ isEdit ? `ID: ${route.params.id}` : 'Isi data ruangan baru' }}
-          </p>
-        </div>
-      </div>
+      <Button label="Simpan" icon="pi pi-save" :loading="processing" @click="handleSubmit" />
     </div>
-
-    <!-- Form placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-file-edit text-4xl mb-3 block"></i>
-          <p class="text-sm">Form {{ pageTitle }} akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  </CRUPage>
 </template>

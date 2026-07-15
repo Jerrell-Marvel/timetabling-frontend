@@ -1,46 +1,60 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CRUPage from '@/layout/CRUPage.vue'
+import UserFormFields from '@/components/users/UserFormFields.vue'
+import { useApiForm } from '@/composables/useApiForm'
+import { usersService } from '@/services'
+import type { UserPayload } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const isEdit = computed(() => !!route.params.id)
-const pageTitle = computed(() => (isEdit.value ? 'Edit Pengguna' : 'Tambah Pengguna'))
+const id = computed(() => (route.params.id ? Number(route.params.id) : null))
+const isEdit = computed(() => id.value !== null)
+
+const form = reactive<UserPayload>({ name: '', email: '', password: '', faculty: '' })
+const { errors, processing, submit } = useApiForm()
+
+onMounted(async () => {
+  if (id.value !== null) {
+    const data = await usersService.get(id.value)
+    form.name = data.name
+    form.email = data.email
+    form.faculty = data.faculty ?? ''
+  }
+})
+
+async function handleSubmit() {
+  // Omit an empty password on edit so it doesn't overwrite the current one.
+  const payload: UserPayload =
+    isEdit.value && !form.password ? { ...form, password: undefined } : form
+
+  await submit(() =>
+    isEdit.value ? usersService.update(id.value!, payload) : usersService.create(payload),
+  )
+  router.push({ name: 'users.index' })
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center gap-3">
+  <CRUPage page="Pengguna" :type="isEdit ? 'Ubah' : 'Buat'" url="/users">
+    <template #error>
+      <Message v-if="Object.keys(errors).length" severity="error" :closable="false" class="mb-4">
+        Periksa kembali data yang diisi.
+      </Message>
+    </template>
+
+    <UserFormFields :model-value="form" :errors="errors" :is-edit="isEdit" />
+
+    <div class="flex justify-end gap-2 mt-6">
       <Button
-        icon="pi pi-arrow-left"
-        severity="secondary"
+        label="Batal"
         text
-        rounded
+        severity="secondary"
         @click="router.push({ name: 'users.index' })"
       />
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-          <i class="pi pi-file-edit text-xl text-slate-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">{{ pageTitle }}</h1>
-          <p class="text-surface-400 text-xs mt-0.5">
-            {{ isEdit ? `ID: ${route.params.id}` : 'Isi data pengguna baru' }}
-          </p>
-        </div>
-      </div>
+      <Button label="Simpan" icon="pi pi-save" :loading="processing" @click="handleSubmit" />
     </div>
-
-    <!-- Form placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-file-edit text-4xl mb-3 block"></i>
-          <p class="text-sm">Form {{ pageTitle }} akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  </CRUPage>
 </template>

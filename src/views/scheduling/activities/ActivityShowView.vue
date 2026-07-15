@@ -1,47 +1,67 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CRUPage from '@/layout/CRUPage.vue'
+import ActivityDetail from '@/components/activities/ActivityDetail.vue'
+import {
+  activitiesService,
+  coursesService,
+  lecturersService,
+  roomsService,
+  roomTypesService,
+  semestersService,
+} from '@/services'
+import type { Activity } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const activity = ref<Activity | null>(null)
+const courseName = ref<string>()
+const semesterName = ref<string>()
+const roomNames = ref<string[]>()
+const roomTypeNames = ref<string[]>()
+const lecturerNames = ref<string[]>()
+
+onMounted(async () => {
+  const data = await activitiesService.get(Number(route.params.id))
+  activity.value = data
+
+  const [course, semester, rooms, roomTypes, lecturers] = await Promise.all([
+    coursesService.get(data.course_id),
+    semestersService.get(data.semester_id),
+    roomsService.list(),
+    roomTypesService.list(),
+    lecturersService.list(),
+  ])
+  courseName.value = course.name
+  semesterName.value = semester.name
+  roomNames.value = rooms.filter((r) => data.room_ids.includes(r.id!)).map((r) => r.code)
+  roomTypeNames.value = roomTypes
+    .filter((rt) => data.room_type_ids.includes(rt.id!))
+    .map((rt) => rt.name)
+  lecturerNames.value = lecturers
+    .filter((l) => data.lecturer_ids.includes(l.id!))
+    .map((l) => l.name)
+})
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <Button
-          icon="pi pi-arrow-left"
-          severity="secondary"
-          text
-          rounded
-          @click="router.push({ name: 'activities.index' })"
-        />
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-            <i class="pi pi-briefcase text-xl text-blue-600"></i>
-          </div>
-          <div>
-            <h1 class="text-xl font-bold text-surface-900">Detail Aktivitas</h1>
-            <p class="text-surface-400 text-xs mt-0.5">ID: {{ route.params.id }}</p>
-          </div>
-        </div>
-      </div>
+  <CRUPage page="Aktivitas" type="Detil" url="/activities">
+    <div class="flex justify-end mb-4">
       <Button
         label="Edit"
         icon="pi pi-pencil"
         @click="router.push({ name: 'activities.edit', params: { id: route.params.id } })"
       />
     </div>
-
-    <!-- Detail placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-id-card text-4xl mb-3 block"></i>
-          <p class="text-sm">Detail Aktivitas akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <ActivityDetail
+      v-if="activity"
+      :activity="activity"
+      :course-name="courseName"
+      :semester-name="semesterName"
+      :room-names="roomNames"
+      :room-type-names="roomTypeNames"
+      :lecturer-names="lecturerNames"
+    />
+  </CRUPage>
 </template>

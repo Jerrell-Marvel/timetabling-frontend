@@ -1,37 +1,93 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ResourceListLayout, ResourceTable, ImportDialog, DownloadMenu } from '@/components/base'
+import type { ResourceColumn, ImportEndpoint, DownloadItem } from '@/components/base'
+import { coursesService, prodisService } from '@/services'
+import type { Course, Prodi } from '@/types'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
+const rows = ref<Course[]>([])
+const prodis = ref<Prodi[]>([])
+const loading = ref(false)
+const importVisible = ref(false)
+
+const prodiNameById = computed(() => new Map(prodis.value.map((p) => [p.id, p.name])))
+
+const columns = computed<ResourceColumn<Course>[]>(() => [
+  { field: 'code', header: 'Kode', sortable: true },
+  { field: 'name', header: 'Nama', sortable: true },
+  {
+    field: 'prodi_id',
+    header: 'Program Studi',
+    format: (row) => prodiNameById.value.get(row.prodi_id) ?? row.prodi_id,
+  },
+  { field: 'semester', header: 'Semester', sortable: true },
+])
+
+const importEndpoints: ImportEndpoint[] = [
+  { key: 'base', label: 'Data Matakuliah', upload: (file) => coursesService.uploadCourse(file) },
+]
+
+const downloadItems: DownloadItem[] = [
+  {
+    label: 'Template Matakuliah',
+    filename: 'template-matakuliah.xlsx',
+    action: () => coursesService.excelCourse(),
+  },
+]
+
+async function load() {
+  loading.value = true
+  try {
+    const [courses, prodiList] = await Promise.all([coursesService.list(), prodisService.list()])
+    rows.value = courses
+    prodis.value = prodiList
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(load)
+
+async function onDelete(row: Course) {
+  await coursesService.destroy(row.id!)
+  toast.success('Matakuliah berhasil dihapus.')
+  await load()
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
-          <i class="pi pi-book text-xl text-pink-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">Matakuliah</h1>
-          <p class="text-surface-400 text-xs mt-0.5">Daftar data matakuliah</p>
-        </div>
-      </div>
+  <ResourceListLayout
+    title="Matakuliah"
+    create-to="/courses/create"
+    create-label="Tambah Matakuliah"
+  >
+    <template #actions>
+      <DownloadMenu :items="downloadItems" label="Unduh Template" />
       <Button
-        label="Tambah Matakuliah"
-        icon="pi pi-plus"
-        @click="router.push({ name: 'courses.create' })"
+        label="Impor"
+        icon="pi pi-upload"
+        severity="secondary"
+        @click="importVisible = true"
       />
-    </div>
+    </template>
 
-    <!-- Table placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-table text-4xl mb-3 block"></i>
-          <p class="text-sm">Data tabel Matakuliah akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <ResourceTable
+      :rows="rows"
+      :columns="columns"
+      :loading="loading"
+      @view="(row) => router.push({ name: 'courses.show', params: { id: String(row.id) } })"
+      @edit="(row) => router.push({ name: 'courses.edit', params: { id: String(row.id) } })"
+      @delete="onDelete"
+    />
+  </ResourceListLayout>
+
+  <ImportDialog
+    v-model:visible="importVisible"
+    :endpoints="importEndpoints"
+    header="Impor Data Matakuliah"
+    @uploaded="load"
+  />
 </template>

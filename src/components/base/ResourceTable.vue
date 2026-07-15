@@ -7,11 +7,13 @@
  */
 import { useConfirm } from '@/composables/useConfirm'
 
-export interface ResourceColumn {
+export interface ResourceColumn<T = unknown> {
   /** Supports dot-notation nested-field access, e.g. `"course.name"`. */
   field: string
   header: string
   sortable?: boolean
+  /** Overrides the field lookup for display, e.g. resolving an id to a related name. */
+  format?: (row: T) => unknown
 }
 
 export type ResourceAction = 'view' | 'edit' | 'delete'
@@ -19,12 +21,14 @@ export type ResourceAction = 'view' | 'edit' | 'delete'
 const props = withDefaults(
   defineProps<{
     rows: T[]
-    columns: ResourceColumn[]
+    columns: ResourceColumn<T>[]
     actions?: ResourceAction[]
     loading?: boolean
     pageSize?: number
     dataKey?: string
     deleteMessage?: string
+    /** Per-row guard hiding the delete action, e.g. a user's own account row. */
+    canDelete?: (row: T) => boolean
   }>(),
   {
     actions: () => ['view', 'edit', 'delete'],
@@ -32,6 +36,7 @@ const props = withDefaults(
     pageSize: 10,
     dataKey: 'id',
     deleteMessage: 'Yakin ingin menghapus data ini?',
+    canDelete: () => true,
   },
 )
 
@@ -73,7 +78,7 @@ function onDeleteClick(row: T) {
       :sortable="column.sortable"
     >
       <template #body="{ data }">
-        {{ resolveField(data, column.field) }}
+        {{ column.format ? column.format(data) : resolveField(data, column.field) }}
       </template>
     </Column>
 
@@ -97,7 +102,7 @@ function onDeleteClick(row: T) {
             @click="emit('edit', data)"
           />
           <Button
-            v-if="actions.includes('delete')"
+            v-if="actions.includes('delete') && canDelete(data)"
             icon="pi pi-trash"
             text
             rounded

@@ -1,47 +1,40 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CRUPage from '@/layout/CRUPage.vue'
+import RoomDetail from '@/components/rooms/RoomDetail.vue'
+import { roomsService, roomTypesService } from '@/services'
+import type { Room } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const room = ref<Room | null>(null)
+const roomTypeName = ref<string | undefined>()
+const parentName = ref<string | undefined>()
+
+onMounted(async () => {
+  const data = await roomsService.get(Number(route.params.id))
+  room.value = data
+
+  const type = await roomTypesService.get(data.room_type_id)
+  roomTypeName.value = type.name
+
+  if (data.parent_id) {
+    const parent = await roomsService.get(data.parent_id)
+    parentName.value = parent.code
+  }
+})
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <Button
-          icon="pi pi-arrow-left"
-          severity="secondary"
-          text
-          rounded
-          @click="router.push({ name: 'rooms.index' })"
-        />
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-            <i class="pi pi-building text-xl text-orange-600"></i>
-          </div>
-          <div>
-            <h1 class="text-xl font-bold text-surface-900">Detail Ruangan</h1>
-            <p class="text-surface-400 text-xs mt-0.5">ID: {{ route.params.id }}</p>
-          </div>
-        </div>
-      </div>
+  <CRUPage page="Ruangan" type="Detil" url="/rooms">
+    <div class="flex justify-end mb-4">
       <Button
         label="Edit"
         icon="pi pi-pencil"
         @click="router.push({ name: 'rooms.edit', params: { id: route.params.id } })"
       />
     </div>
-
-    <!-- Detail placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-id-card text-4xl mb-3 block"></i>
-          <p class="text-sm">Detail Ruangan akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <RoomDetail v-if="room" :room="room" :room-type-name="roomTypeName" :parent-name="parentName" />
+  </CRUPage>
 </template>

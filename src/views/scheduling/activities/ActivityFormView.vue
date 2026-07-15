@@ -1,46 +1,107 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CRUPage from '@/layout/CRUPage.vue'
+import ActivityFormFields from '@/components/activities/ActivityFormFields.vue'
+import { useApiForm } from '@/composables/useApiForm'
+import {
+  activitiesService,
+  coursesService,
+  lecturersService,
+  roomsService,
+  roomTypesService,
+  semestersService,
+} from '@/services'
+import type { Activity, Option } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const isEdit = computed(() => !!route.params.id)
-const pageTitle = computed(() => (isEdit.value ? 'Edit Aktivitas' : 'Tambah Aktivitas'))
+const id = computed(() => (route.params.id ? Number(route.params.id) : null))
+const isEdit = computed(() => id.value !== null)
+
+const form = reactive<Activity>({
+  semester_id: 0,
+  course_id: 0,
+  quota: 0,
+  duration: 1,
+  parallel: 1,
+  room_ids: [],
+  room_type_ids: [],
+  lecturer_ids: [],
+  day_gaps: [],
+})
+
+const semesterOptions = ref<Option[]>([])
+const courseOptions = ref<Option[]>([])
+const roomOptions = ref<Option[]>([])
+const roomTypeOptions = ref<Option[]>([])
+const lecturerOptions = ref<Option[]>([])
+const activityOptions = ref<Option[]>([])
+const { errors, processing, submit } = useApiForm()
+
+onMounted(async () => {
+  const [semesters, courses, rooms, roomTypes, lecturers, activities] = await Promise.all([
+    semestersService.list(),
+    coursesService.list(),
+    roomsService.list(),
+    roomTypesService.list(),
+    lecturersService.list(),
+    activitiesService.list(),
+  ])
+  semesterOptions.value = semesters.map((s) => ({ label: s.name, value: s.id! }))
+  courseOptions.value = courses.map((c) => ({ label: c.name, value: c.id! }))
+  roomOptions.value = rooms.map((r) => ({ label: r.code, value: r.id! }))
+  roomTypeOptions.value = roomTypes.map((rt) => ({ label: rt.name, value: rt.id! }))
+  lecturerOptions.value = lecturers.map((l) => ({ label: l.name, value: l.id! }))
+  activityOptions.value = activities
+    .filter((a) => a.id !== id.value)
+    .map((a) => ({
+      label: courses.find((c) => c.id === a.course_id)?.name ?? `Aktivitas #${a.id}`,
+      value: a.id!,
+    }))
+
+  if (id.value !== null) {
+    const data = await activitiesService.get(id.value)
+    Object.assign(form, data)
+  }
+})
+
+async function handleSubmit() {
+  await submit(() =>
+    isEdit.value ? activitiesService.update(id.value!, form) : activitiesService.create(form),
+  )
+  router.push({ name: 'activities.index' })
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center gap-3">
+  <CRUPage page="Aktivitas" :type="isEdit ? 'Ubah' : 'Buat'" url="/activities">
+    <template #error>
+      <Message v-if="Object.keys(errors).length" severity="error" :closable="false" class="mb-4">
+        Periksa kembali data yang diisi.
+      </Message>
+    </template>
+
+    <ActivityFormFields
+      :model-value="form"
+      :errors="errors"
+      :semester-options="semesterOptions"
+      :course-options="courseOptions"
+      :room-options="roomOptions"
+      :room-type-options="roomTypeOptions"
+      :lecturer-options="lecturerOptions"
+      :activity-options="activityOptions"
+    />
+
+    <div class="flex justify-end gap-2 mt-6">
       <Button
-        icon="pi pi-arrow-left"
-        severity="secondary"
+        label="Batal"
         text
-        rounded
+        severity="secondary"
         @click="router.push({ name: 'activities.index' })"
       />
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-          <i class="pi pi-file-edit text-xl text-blue-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">{{ pageTitle }}</h1>
-          <p class="text-surface-400 text-xs mt-0.5">
-            {{ isEdit ? `ID: ${route.params.id}` : 'Isi data aktivitas baru' }}
-          </p>
-        </div>
-      </div>
+      <Button label="Simpan" icon="pi pi-save" :loading="processing" @click="handleSubmit" />
     </div>
-
-    <!-- Form placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-file-edit text-4xl mb-3 block"></i>
-          <p class="text-sm">Form {{ pageTitle }} akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  </CRUPage>
 </template>

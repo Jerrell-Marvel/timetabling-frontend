@@ -1,37 +1,49 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ResourceListLayout, ResourceTable } from '@/components/base'
+import type { ResourceColumn } from '@/components/base'
+import { activityTypesService } from '@/services'
+import type { ActivityType } from '@/types'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
+const rows = ref<ActivityType[]>([])
+const loading = ref(false)
+
+const columns: ResourceColumn<ActivityType>[] = [{ field: 'name', header: 'Nama', sortable: true }]
+
+async function load() {
+  loading.value = true
+  try {
+    rows.value = await activityTypesService.list()
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(load)
+
+async function onDelete(row: ActivityType) {
+  await activityTypesService.destroy(row.id!)
+  toast.success('Tipe aktivitas berhasil dihapus.')
+  await load()
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-          <i class="pi pi-tags text-xl text-teal-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">Tipe Aktivitas</h1>
-          <p class="text-surface-400 text-xs mt-0.5">Daftar tipe aktivitas</p>
-        </div>
-      </div>
-      <Button
-        label="Tambah Tipe Aktivitas"
-        icon="pi pi-plus"
-        @click="router.push({ name: 'activityTypes.create' })"
-      />
-    </div>
-
-    <!-- Table placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-table text-4xl mb-3 block"></i>
-          <p class="text-sm">Data tabel Tipe Aktivitas akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <ResourceListLayout
+    title="Tipe Aktivitas"
+    create-to="/activity-types/create"
+    create-label="Tambah Tipe Aktivitas"
+  >
+    <ResourceTable
+      :rows="rows"
+      :columns="columns"
+      :loading="loading"
+      :actions="['edit', 'delete']"
+      @edit="(row) => router.push({ name: 'activityTypes.edit', params: { id: String(row.id) } })"
+      @delete="onDelete"
+    />
+  </ResourceListLayout>
 </template>

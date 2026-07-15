@@ -1,37 +1,97 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ResourceListLayout, ResourceTable, ImportDialog, DownloadMenu } from '@/components/base'
+import type { ResourceColumn, ImportEndpoint, DownloadItem } from '@/components/base'
+import { lecturersService } from '@/services'
+import type { Lecturer } from '@/types'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
+const rows = ref<Lecturer[]>([])
+const loading = ref(false)
+const importVisible = ref(false)
+
+const columns: ResourceColumn[] = [
+  { field: 'nik', header: 'NIK', sortable: true },
+  { field: 'name', header: 'Nama', sortable: true },
+  { field: 'alias', header: 'Alias' },
+]
+
+const importEndpoints: ImportEndpoint[] = [
+  {
+    key: 'base',
+    label: 'Data Pengajar',
+    upload: (file) => lecturersService.uploadLecturer(file),
+  },
+  {
+    key: 'time',
+    label: 'Waktu Pengajar',
+    upload: (file) => lecturersService.uploadLecturerTime(file),
+  },
+]
+
+const downloadItems: DownloadItem[] = [
+  {
+    label: 'Template Pengajar',
+    filename: 'template-pengajar.xlsx',
+    action: () => lecturersService.excelLecturer(),
+  },
+  {
+    label: 'Template Waktu Pengajar',
+    filename: 'template-waktu-pengajar.xlsx',
+    action: () => lecturersService.excelLecturerTime(),
+  },
+]
+
+async function load() {
+  loading.value = true
+  try {
+    rows.value = await lecturersService.list()
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(load)
+
+async function onDelete(row: Lecturer) {
+  await lecturersService.destroy(row.id!)
+  toast.success('Pengajar berhasil dihapus.')
+  await load()
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
-          <i class="pi pi-users text-xl text-sky-600"></i>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold text-surface-900">Pengajar</h1>
-          <p class="text-surface-400 text-xs mt-0.5">Daftar data dosen</p>
-        </div>
-      </div>
+  <ResourceListLayout
+    title="Pengajar"
+    create-to="/lecturers/create"
+    create-label="Tambah Pengajar"
+  >
+    <template #actions>
+      <DownloadMenu :items="downloadItems" label="Unduh Template" />
       <Button
-        label="Tambah Pengajar"
-        icon="pi pi-plus"
-        @click="router.push({ name: 'lecturers.create' })"
+        label="Impor"
+        icon="pi pi-upload"
+        severity="secondary"
+        @click="importVisible = true"
       />
-    </div>
+    </template>
 
-    <!-- Table placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-table text-4xl mb-3 block"></i>
-          <p class="text-sm">Data tabel Pengajar akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <ResourceTable
+      :rows="rows"
+      :columns="columns"
+      :loading="loading"
+      @view="(row) => router.push({ name: 'lecturers.show', params: { id: String(row.id) } })"
+      @edit="(row) => router.push({ name: 'lecturers.edit', params: { id: String(row.id) } })"
+      @delete="onDelete"
+    />
+  </ResourceListLayout>
+
+  <ImportDialog
+    v-model:visible="importVisible"
+    :endpoints="importEndpoints"
+    header="Impor Data Pengajar"
+    @uploaded="load"
+  />
 </template>

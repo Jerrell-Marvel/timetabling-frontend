@@ -1,47 +1,33 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CRUPage from '@/layout/CRUPage.vue'
+import CourseDetail from '@/components/courses/CourseDetail.vue'
+import { coursesService, prodisService } from '@/services'
+import type { Course } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const course = ref<Course | null>(null)
+const prodiName = ref<string | undefined>()
+
+onMounted(async () => {
+  const data = await coursesService.get(Number(route.params.id))
+  course.value = data
+  const prodi = await prodisService.get(data.prodi_id)
+  prodiName.value = prodi.name
+})
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <Button
-          icon="pi pi-arrow-left"
-          severity="secondary"
-          text
-          rounded
-          @click="router.push({ name: 'courses.index' })"
-        />
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
-            <i class="pi pi-book text-xl text-pink-600"></i>
-          </div>
-          <div>
-            <h1 class="text-xl font-bold text-surface-900">Detail Matakuliah</h1>
-            <p class="text-surface-400 text-xs mt-0.5">ID: {{ route.params.id }}</p>
-          </div>
-        </div>
-      </div>
+  <CRUPage page="Matakuliah" type="Detil" url="/courses">
+    <div class="flex justify-end mb-4">
       <Button
         label="Edit"
         icon="pi pi-pencil"
         @click="router.push({ name: 'courses.edit', params: { id: route.params.id } })"
       />
     </div>
-
-    <!-- Detail placeholder -->
-    <div class="bg-white rounded-2xl border border-surface-100 shadow-sm p-6">
-      <div class="flex items-center justify-center h-48 text-surface-300">
-        <div class="text-center">
-          <i class="pi pi-id-card text-4xl mb-3 block"></i>
-          <p class="text-sm">Detail Matakuliah akan ditampilkan di sini</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <CourseDetail v-if="course" :course="course" :prodi-name="prodiName" />
+  </CRUPage>
 </template>
