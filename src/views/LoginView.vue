@@ -1,27 +1,38 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { getErrorMessage } from '@/lib/api'
 
 const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const remember = ref(false)
 const isLoading = ref(false)
+// Legacy behavior: one top-level flash for invalid credentials, not field errors.
+const errorMessage = ref('')
 
-const handleLogin = () => {
-  // Validasi sederhana
+async function handleLogin() {
+  errorMessage.value = ''
+
   if (!email.value || !password.value) {
-    alert('Email dan Password wajib diisi!')
+    errorMessage.value = 'Email dan Password wajib diisi.'
     return
   }
 
   isLoading.value = true
-
-  setTimeout(() => {
+  try {
+    await auth.login({ email: email.value, password: password.value, remember: remember.value })
+    const redirect = route.query.redirect
+    router.push(typeof redirect === 'string' && redirect ? redirect : { name: 'home' })
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, 'Email atau password salah.')
+  } finally {
     isLoading.value = false
-
-    router.push('/')
-  }, 1500)
+  }
 }
 </script>
 
@@ -39,6 +50,10 @@ const handleLogin = () => {
       </div>
 
       <form @submit.prevent="handleLogin" class="space-y-6">
+        <Message v-if="errorMessage" severity="error" :closable="false">
+          {{ errorMessage }}
+        </Message>
+
         <div>
           <label for="email" class="block text-sm font-medium text-surface-700 mb-2">Email</label>
           <InputText
@@ -63,7 +78,13 @@ const handleLogin = () => {
             toggleMask
             class="w-full"
             inputClass="w-full"
+            autocomplete="current-password"
           />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="remember" inputId="remember" binary />
+          <label for="remember" class="text-sm text-surface-700">Ingat saya</label>
         </div>
 
         <div>

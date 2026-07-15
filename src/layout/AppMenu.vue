@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import AppMenuItem from './AppMenuItem.vue'
 import type { MenuItemType } from './AppMenuItem.vue'
+import { useAuthStore } from '@/stores/auth'
 
-// Hardcode var admin sementara
-const isAdmin = ref(true)
+const { isAdmin } = storeToRefs(useAuthStore())
 
 // Kalau ada children, maka parent tidak perlu memiliki adminRequired
 const menus = ref<MenuItemType[]>([

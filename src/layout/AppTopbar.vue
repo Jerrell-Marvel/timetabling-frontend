@@ -1,8 +1,36 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import Button from 'primevue/button'
+import Menu from 'primevue/menu'
+import type { MenuItem } from 'primevue/menuitem'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useLayout } from './composables/layout'
+import { useAuthStore } from '@/stores/auth'
 
 const { toggleMenu } = useLayout()
+const router = useRouter()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+
+const accountMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+async function logout() {
+  await authStore.logout()
+  router.push({ name: 'login' })
+}
+
+const accountItems = computed<MenuItem[]>(() => [
+  {
+    label: 'Keluar',
+    icon: 'pi pi-sign-out',
+    command: logout,
+  },
+])
+
+function toggleAccountMenu(event: Event) {
+  accountMenu.value?.toggle(event)
+}
 </script>
 
 <template>
@@ -22,11 +50,17 @@ const { toggleMenu } = useLayout()
 
     <div class="flex items-center gap-3">
       <Button
-        label="Login"
-        icon="pi pi-sign-in"
-        severity="secondary"
-        @click="$router.push('/login')"
-      />
+        text
+        class="text-surface-700"
+        @click="toggleAccountMenu"
+        aria-haspopup="true"
+        aria-controls="account_menu"
+      >
+        <i class="pi pi-user-circle text-xl"></i>
+        <span class="hidden sm:inline">{{ user?.name ?? 'Akun' }}</span>
+        <i class="pi pi-chevron-down text-xs"></i>
+      </Button>
+      <Menu id="account_menu" ref="accountMenu" :model="accountItems" :popup="true" />
     </div>
   </div>
 </template>

@@ -1,0 +1,13 @@
+/** Barrel for all domain service modules. */
+export { lecturersService } from './lecturers'
+export { coursesService } from './courses'
+export { roomsService } from './rooms'
+export { activitiesService } from './activities'
+export { settingsService } from './settings'
+export { semestersService } from './semesters'
+export { resultsService } from './results'
+export { prodisService } from './prodis'
+export { roomTypesService } from './roomTypes'
+export { activityTypesService } from './activityTypes'
+export { usersService } from './users'
+export { timetableService } from './timetable'

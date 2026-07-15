@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 // Layouts
 import AuthLayout from '@/layout/AuthLayout.vue'
@@ -44,7 +45,7 @@ const routes: RouteRecordRaw[] = [
         path: '',
         name: 'home',
         component: () => import('@/views/HomeView.vue'),
-        meta: { title: 'Dashboard' },
+        meta: { title: 'Beranda' },
       },
 
       // ── Penjadwalan ───────────────────────
@@ -81,27 +82,27 @@ const router = createRouter({
 // ─────────────────────────────────────────────
 // Navigation guards
 // ─────────────────────────────────────────────
-router.beforeEach((to, _from, next) => {
-  // TODO: Replace these stubs with Pinia auth store once auth is implemented.
-  const isAuthenticated = true // e.g. useAuthStore().isAuthenticated
-  const isAdmin = true // e.g. useAuthStore().isAdmin
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  // Hydrate the session once (from the cookie) before evaluating access.
+  await auth.ensureInitialized()
 
   // Guest-only routes (e.g. /login) — redirect authenticated users to home
-  if (to.meta.requiresGuest && isAuthenticated) {
-    return next({ name: 'home' })
+  if (to.meta.requiresGuest && auth.isAuthenticated) {
+    return { name: 'home' }
   }
 
   // Auth-required routes — redirect unauthenticated users to login
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({ name: 'login', query: { redirect: to.fullPath } })
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   // Admin-required routes — redirect non-admin users to home
-  if (to.meta.requiresAdmin && !isAdmin) {
-    return next({ name: 'home' })
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return { name: 'home' }
   }
 
-  next()
+  return true
 })
 
 // ─────────────────────────────────────────────

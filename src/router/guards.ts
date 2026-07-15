@@ -1,51 +1,49 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 /**
- * Redirects to home if the user is already authenticated.
- * Used on guest-only routes like /login.
- * TODO: Replace isAuthenticated with Pinia auth store check.
+ * Standalone per-route guard helpers, store-backed. The active router uses the
+ * global `beforeEach` in `index.ts`; these are kept for per-route composition and
+ * assume the store has been hydrated (`ensureInitialized`) by that global guard.
  */
-export function guestGuard(
-  to: RouteLocationNormalized,
+
+/** Redirects to home if the user is already authenticated (guest-only routes). */
+export async function guestGuard(
+  _to: RouteLocationNormalized,
   _from: RouteLocationNormalized,
   next: NavigationGuardNext,
 ) {
-  const isAuthenticated = false // TODO: useAuthStore().isAuthenticated
-  if (isAuthenticated) {
+  const auth = useAuthStore()
+  await auth.ensureInitialized()
+  if (auth.isAuthenticated) {
     return next({ name: 'home' })
   }
   next()
 }
 
-/**
- * Redirects to /login if the user is NOT authenticated.
- * Preserves the intended destination via `redirect` query param.
- * TODO: Replace isAuthenticated with Pinia auth store check.
- */
-export function authGuard(
+/** Redirects to /login if the user is NOT authenticated (preserves destination). */
+export async function authGuard(
   to: RouteLocationNormalized,
   _from: RouteLocationNormalized,
   next: NavigationGuardNext,
 ) {
-  const isAuthenticated = false // TODO: useAuthStore().isAuthenticated
-  if (!isAuthenticated) {
+  const auth = useAuthStore()
+  await auth.ensureInitialized()
+  if (!auth.isAuthenticated) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
   next()
 }
 
-/**
- * Redirects to home if the user is NOT an admin.
- * Applied to routes that require Auth + Admin.
- * TODO: Replace isAdmin with Pinia auth store check.
- */
-export function adminGuard(
+/** Redirects to home if the user is NOT an admin (Auth + Admin routes). */
+export async function adminGuard(
   _to: RouteLocationNormalized,
   _from: RouteLocationNormalized,
   next: NavigationGuardNext,
 ) {
-  const isAdmin = false // TODO: useAuthStore().isAdmin
-  if (!isAdmin) {
+  const auth = useAuthStore()
+  await auth.ensureInitialized()
+  if (!auth.isAdmin) {
     return next({ name: 'home' })
   }
   next()
