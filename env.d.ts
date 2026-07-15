@@ -20,9 +20,3 @@ declare module 'primevue/toasteventbus' {
   const bus: ToastEventBus
   export default bus
 }
-
-declare module '*.vue' {
-  import type { DefineComponent } from 'vue'
-  const component: DefineComponent<{}, {}, any>
-  export default component
-}

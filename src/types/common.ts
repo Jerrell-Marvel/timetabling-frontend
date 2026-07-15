@@ -10,28 +10,6 @@ export interface ValidationErrorBody {
   errors: Record<string, string[]>
 }
 
-/** Single-resource envelope returned by Laravel API Resources (`{ data: {...} }`). */
-export interface ResourceEnvelope<T> {
-  data: T
-}
-
-/** Paginated collection envelope (`{ data: [...], meta, links }`). */
-export interface Paginated<T> {
-  data: T[]
-  meta: {
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-  }
-  links?: {
-    first?: string
-    last?: string
-    prev?: string | null
-    next?: string | null
-  }
-}
-
 /** A field/value option for `Select` / `MultiSelect` controls. */
 export interface Option<V = Id> {
   label: string

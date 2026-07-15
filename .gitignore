@@ -37,3 +37,10 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Compiled output of *.config.ts (tsconfig.node.json previously emitted these
+# into the project root; now emitted to node_modules/.tmp, kept here as a guard)
+/vite.config.js
+/vite.config.d.ts
+/eslint.config.js
+/eslint.config.d.ts

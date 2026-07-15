@@ -20,6 +20,10 @@
     // Composite must be true for referenced projects
     "composite": true,
 
+    // Keep compiled config output out of the project root (it was previously
+    // emitted next to vite.config.ts/eslint.config.ts and shadowing them).
+    "outDir": "./node_modules/.tmp/tsconfig.node",
+
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.
     // Specified here to keep it out of the root directory.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
