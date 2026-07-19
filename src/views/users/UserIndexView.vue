@@ -18,7 +18,7 @@ const columns: ResourceColumn<User>[] = [
   { field: 'name', header: 'Nama', sortable: true },
   { field: 'email', header: 'Email', sortable: true },
   { field: 'faculty', header: 'Fakultas' },
-  { field: 'is_admin', header: 'Admin', format: (row) => (row.is_admin ? 'Ya' : 'Tidak') },
+  { field: 'admin', header: 'Admin', format: (row) => (row.admin ? 'Ya' : 'Tidak') },
 ]
 
 async function load() {

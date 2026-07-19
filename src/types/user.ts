@@ -1,15 +1,17 @@
 import type { Id } from './common'
 
 /**
- * Application user. `is_admin` mirrors the legacy `User::isAdmin()` used by the
- * `isAdmin` middleware — it is the single source for admin route gating.
+ * Application user — mirrors the Spring Boot payload verbatim (`/auth/login`.user,
+ * `/auth/me`, `/api/users`). `admin` drives admin route gating (the `isAdmin`
+ * getter). No frontend remapping: the type follows the backend's shape exactly.
  */
 export interface User {
   id: Id
   name: string
   email: string
   faculty?: string | null
-  is_admin: boolean
+  emailVerifiedAt?: string | null
+  admin: boolean
 }
 
 /** Payload for `POST /login`. */

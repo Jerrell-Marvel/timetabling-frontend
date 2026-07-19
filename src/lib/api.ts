@@ -1,40 +1,65 @@
-import axios, { AxiosError, type AxiosInstance } from 'axios'
+import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import ToastEventBus from 'primevue/toasteventbus'
 import type { ValidationErrorBody } from '@/types'
 
 /**
  * Single Axios instance for the whole SPA.
  *
- * Auth strategy (single-sourced, R-audit): **cookie-based Laravel session with
- * CSRF**, matching the legacy `web.php` routes. `withCredentials` sends the
- * session cookie; Axios auto-attaches the `XSRF-TOKEN` cookie as the
- * `X-XSRF-TOKEN` header (see `xsrf*` options). Call {@link ensureCsrf} before the
- * first mutating request in a session (login) to prime the cookie.
+ * Auth strategy: **stateless JWT** against the Spring Boot backend (Laravel's
+ * cookie/CSRF/Sanctum flow is dropped). A bearer token is stored in
+ * `localStorage` and attached to every request by the request interceptor.
  *
- * All raw `fetch` + manual CSRF coupling from the legacy `services/*.js` is
- * replaced by this module.
+ * IMPORTANT — path convention: Spring serves every route under `/api`
+ * (e.g. `/api/courses`, `/api/auth/login`). The domain services in
+ * `src/services/*` still call bare paths like `/courses`, so `baseURL` must
+ * resolve to `.../api` for them to reach the backend. Set `VITE_API_URL`
+ * accordingly (see `.env`); it defaults to `http://localhost:8085`.
+ *
+ * Casing note for future services: responses are `camelCase` **except**
+ * `/api/activities`, whose request/response bodies are `snake_case`
+ * (`semester_id`, `course_class`, `activity_type_id`, …). Activity payloads
+ * must be mapped verbatim — do not camelCase them.
  */
+
+// ── Token storage (single source of truth) ─────────────────────────────────
+const TOKEN_KEY = 'auth_token'
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY)
+}
+
 export const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN',
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8085',
   headers: {
     Accept: 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
   },
 })
 
-/** Prime the CSRF cookie (Sanctum-style). Override the path via `VITE_CSRF_URL`. */
+/**
+ * @deprecated JWT is stateless — no CSRF cookie priming is required. Kept as a
+ * no-op so the existing auth store keeps compiling; remove once the auth store
+ * migrates off `ensureCsrf`.
+ */
 export async function ensureCsrf(): Promise<void> {
-  await api.get(import.meta.env.VITE_CSRF_URL ?? '/sanctum/csrf-cookie')
+  /* no-op under JWT */
 }
 
 // ── Type guards / helpers for error handling ───────────────────────────────
 export function isValidationError(
   error: unknown,
 ): error is AxiosError<ValidationErrorBody> {
-  return axios.isAxiosError(error) && error.response?.status === 422
+  // Spring bean-validation failures surface as 400; Laravel used 422. Accept both.
+  if (!axios.isAxiosError(error)) return false
+  const status = error.response?.status
+  return status === 400 || status === 422
 }
 
 /** Extract a human-readable message from any thrown API error. */
@@ -49,31 +74,40 @@ function toast(severity: 'error' | 'warn', summary: string, detail: string, life
   ToastEventBus.emit('add', { severity, summary, detail, life })
 }
 
+// ── Request interceptor ────────────────────────────────────────────────────
+// Attach the JWT as `Authorization: Bearer <token>` when one is present.
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 // ── Response interceptor ───────────────────────────────────────────────────
-// 401 → clear session + redirect to login; 403 → toast; 422 → pass through to
-// the form (useApiForm); 5xx/network → generic toast.
+// This Spring backend returns **403** for unauthenticated requests (not only
+// 401). Treat both as an auth failure: clear the token and redirect to login.
+// 400/422 → pass through to the form (useApiForm); 5xx/network → generic toast.
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ValidationErrorBody>) => {
     const status = error.response?.status
 
-    if (status === 401 || status === 419) {
+    if (status === 401 || status === 403) {
+      clearToken()
       // Break the api ↔ store import cycle with a dynamic import.
       const [{ useAuthStore }, { default: router }] = await Promise.all([
         import('@/stores/auth'),
         import('@/router'),
       ])
-      const auth = useAuthStore()
-      auth.clearSession()
+      useAuthStore().clearSession()
       if (router.currentRoute.value.name !== 'login') {
         router.push({
           name: 'login',
           query: { redirect: router.currentRoute.value.fullPath },
         })
       }
-    } else if (status === 403) {
-      toast('error', 'Ditolak', getErrorMessage(error, 'Anda tidak memiliki akses.'))
-    } else if (status === 422) {
+    } else if (status === 400 || status === 422) {
       // Field errors are handled by useApiForm at the call site — no toast.
     } else if (!error.response) {
       toast('error', 'Koneksi', 'Tidak dapat terhubung ke server.')
