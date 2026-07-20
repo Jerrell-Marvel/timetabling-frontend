@@ -1,15 +1,19 @@
 import api from '@/lib/api'
 import { createResource, download, upload } from './resource'
-import type { Course, CourseInfo, Id } from '@/types'
+import type { Course, CourseInfo, CoursePayload, Id } from '@/types'
+
+const resource = createResource<Course, CoursePayload>('courses')
 
 /** `resource('courses')` + dependent fetches + Excel template/import. */
 export const coursesService = {
-  ...createResource<Course>('courses'),
+  ...resource,
 
-  // Dependent fetches (course → concentration → course list)
-  courseInfo: (id: Id) => api.get<CourseInfo>(`/courseInfo/${id}`).then((r) => r.data),
-  konsentrasi: (id: Id) => api.get<string[]>(`/konsentrasi/${id}`).then((r) => r.data),
-  courselist: (id: Id) => api.get<Course[]>(`/courselist/${id}`).then((r) => r.data),
+  /** `GET /api/courses/{id}/info` */
+  courseInfo: (id: Id) => api.get<CourseInfo>(`/courses/${id}/info`).then((r) => r.data),
+
+  /** `GET /api/courses/by-jurusan/{id}` — candidate courses for a department. */
+  byJurusan: (jurusanId: Id) =>
+    api.get<Course[]>(`/courses/by-jurusan/${jurusanId}`).then((r) => r.data),
 
   excelCourse: () => download('/excel-course'),
   uploadCourse: (file: File) => upload('/uploads-course', file),

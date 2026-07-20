@@ -4,10 +4,26 @@
 
 export type Id = number
 
-/** Laravel validation-error envelope: `{ message, errors: { field: [msg, ...] } }`. */
-export interface ValidationErrorBody {
+/** A single field-level failure inside {@link ValidationErrorBody}. */
+export interface ApiFieldError {
+  field: string
   message: string
-  errors: Record<string, string[]>
+  rejectedValue?: unknown
+}
+
+/**
+ * Spring's `ErrorResponse` envelope (`GlobalExceptionHandler`). Bean-validation
+ * failures come back as **422** carrying `fieldErrors`; every other handled
+ * error carries just `message`.
+ */
+export interface ValidationErrorBody {
+  success?: boolean
+  status?: number
+  error?: string
+  message: string
+  path?: string
+  timestamp?: string
+  fieldErrors?: ApiFieldError[]
 }
 
 /** A field/value option for `Select` / `MultiSelect` controls. */

@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import type { Lecturer } from '@/types'
+import type { Lecturer, LecturerTime } from '@/types'
 
 defineProps<{ lecturer: Lecturer }>()
+
+/** `day` is a 1-based index (1 = Senin … 6 = Sabtu); index 0 is unused padding. */
+const DAY_LABELS = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+
+function formatSlot(t: LecturerTime): string {
+  return `${DAY_LABELS[t.day] ?? '-'}, ${t.startTime} - ${t.endTime}`
+}
 </script>
 
 <template>
@@ -23,16 +30,13 @@ defineProps<{ lecturer: Lecturer }>()
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Waktu Tidak Tersedia</h3>
-      <ul
-        v-if="lecturer.times.some((t) => t.type === 'Unavailable')"
-        class="flex flex-col gap-1"
-      >
+      <ul v-if="lecturer.notAvailable?.length" class="flex flex-col gap-1">
         <li
-          v-for="(t, i) in lecturer.times.filter((t) => t.type === 'Unavailable')"
-          :key="i"
+          v-for="(t, i) in lecturer.notAvailable"
+          :key="t.id ?? i"
           class="text-sm text-surface-700"
         >
-          {{ t.day }}, {{ t.start }} - {{ t.end }}
+          {{ formatSlot(t) }}
         </li>
       </ul>
       <p v-else class="text-sm text-surface-400">Tidak ada data.</p>
@@ -40,13 +44,9 @@ defineProps<{ lecturer: Lecturer }>()
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Waktu Preferensi</h3>
-      <ul v-if="lecturer.times.some((t) => t.type === 'Priority')" class="flex flex-col gap-1">
-        <li
-          v-for="(t, i) in lecturer.times.filter((t) => t.type === 'Priority')"
-          :key="i"
-          class="text-sm text-surface-700"
-        >
-          {{ t.day }}, {{ t.start }} - {{ t.end }}
+      <ul v-if="lecturer.priority?.length" class="flex flex-col gap-1">
+        <li v-for="(t, i) in lecturer.priority" :key="t.id ?? i" class="text-sm text-surface-700">
+          {{ formatSlot(t) }}
         </li>
       </ul>
       <p v-else class="text-sm text-surface-400">Tidak ada data.</p>

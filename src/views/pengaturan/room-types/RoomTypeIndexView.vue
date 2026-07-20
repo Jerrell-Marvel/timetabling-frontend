@@ -25,7 +25,12 @@ async function load() {
 onMounted(load)
 
 async function onDelete(row: RoomType) {
-  await roomTypesService.destroy(row.id!)
+  // Not awaited by `emit` — swallow rejections (the interceptor toasts the reason).
+  try {
+    await roomTypesService.destroy(row.id)
+  } catch {
+    return
+  }
   toast.success('Tipe ruangan berhasil dihapus.')
   await load()
 }

@@ -107,12 +107,21 @@ api.interceptors.response.use(
           query: { redirect: router.currentRoute.value.fullPath },
         })
       }
+    } else if ((status === 400 || status === 422) && error.response?.data?.fieldErrors?.length) {
+      // Per-field validation — useApiForm renders these inline, so no toast.
     } else if (status === 400 || status === 422) {
-      // Field errors are handled by useApiForm at the call site — no toast.
+      // A 400 with NO `fieldErrors` is a business-rule rejection, not a form error
+      // (e.g. BadRequestException "Cannot delete lecturer: ..."). Nothing renders it
+      // inline, so it must be toasted or it disappears into an unhandled rejection.
+      toast('warn', 'Gagal', getErrorMessage(error, 'Permintaan tidak dapat diproses.'))
     } else if (!error.response) {
       toast('error', 'Koneksi', 'Tidak dapat terhubung ke server.')
     } else if (status && status >= 500) {
       toast('error', 'Server', getErrorMessage(error, 'Kesalahan server.'))
+    } else if (status && status >= 400) {
+      // Other 4xx the form cannot render inline — notably 409 (duplicate code)
+      // and 404. Without this they would fail completely silently.
+      toast('warn', 'Gagal', getErrorMessage(error, 'Permintaan tidak dapat diproses.'))
     }
 
     return Promise.reject(error)

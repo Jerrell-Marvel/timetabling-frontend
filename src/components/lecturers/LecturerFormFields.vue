@@ -1,31 +1,29 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import TimeRangeList from '@/components/controls/TimeRangeList.vue'
-import type { Lecturer, LecturerTime } from '@/types'
+import type { Jurusan, Lecturer, LecturerTime } from '@/types'
 
 defineProps<{
   errors?: Record<string, string>
+  /** `homeBase` options, loaded from `/api/jurusans` by the parent view. */
+  jurusans: Jurusan[]
 }>()
 
 const modelValue = defineModel<Lecturer>({ required: true })
 
+// The backend already groups times by type, so these are straight passthroughs
+// (no client-side filtering/merging needed).
 const unavailableTimes = computed<LecturerTime[]>({
-  get: () => modelValue.value.times.filter((t) => t.type === 'Unavailable'),
+  get: () => modelValue.value.notAvailable ?? [],
   set: (value) => {
-    modelValue.value.times = [
-      ...modelValue.value.times.filter((t) => t.type !== 'Unavailable'),
-      ...value,
-    ]
+    modelValue.value.notAvailable = value
   },
 })
 
 const priorityTimes = computed<LecturerTime[]>({
-  get: () => modelValue.value.times.filter((t) => t.type === 'Priority'),
+  get: () => modelValue.value.priority ?? [],
   set: (value) => {
-    modelValue.value.times = [
-      ...modelValue.value.times.filter((t) => t.type !== 'Priority'),
-      ...value,
-    ]
+    modelValue.value.priority = value
   },
 })
 </script>
@@ -51,16 +49,31 @@ const priorityTimes = computed<LecturerTime[]>({
         <label class="block text-sm font-medium text-surface-700 mb-1">Alias</label>
         <InputText v-model="modelValue.alias" class="w-full" />
       </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-700 mb-1">Home Base</label>
+        <Select
+          v-model="modelValue.homeBase"
+          :options="jurusans"
+          option-label="name"
+          option-value="id"
+          placeholder="Pilih Home Base"
+          class="w-full"
+          :invalid="!!errors?.homeBase"
+        />
+        <Message v-if="errors?.homeBase" severity="error" size="small" variant="simple">{{
+          errors.homeBase
+        }}</Message>
+      </div>
     </div>
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Waktu Tidak Tersedia</h3>
-      <TimeRangeList v-model="unavailableTimes" type="Unavailable" />
+      <TimeRangeList v-model="unavailableTimes" type="NOT_AVAILABLE" />
     </div>
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Waktu Preferensi</h3>
-      <TimeRangeList v-model="priorityTimes" type="Priority" />
+      <TimeRangeList v-model="priorityTimes" type="PRIORITY" />
     </div>
   </div>
 </template>

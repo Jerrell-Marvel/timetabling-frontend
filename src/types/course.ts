@@ -1,25 +1,44 @@
 import type { Id } from './common'
+import type { Jurusan } from './jurusan'
 
-/** Course (`courses`): program/type/semester/concentration plus no-clash constraints. */
+/** `CourseType` enum — the Java constants are literally `Wajib` / `Pilihan`. */
+export type CourseType = 'Wajib' | 'Pilihan'
+
+/**
+ * Course (`courses`), mirroring `CourseResponse` verbatim.
+ *
+ * Note the backend embeds the full `jurusan` alongside `jurusanId`, so views can
+ * render the department name without a second request.
+ */
 export interface Course {
   id?: Id
   code: string
   name: string
-  prodi_id: Id
-  type: string
-  semester: number
-  concentration?: string | null
-  /** Prohibited concurrent courses (legacy `MultipleCoursesComponent`). */
-  prohibited_course_ids: Id[]
-  /** Prohibited concurrent semesters 1–8 (legacy `MultipleSemesterComponent`). */
-  prohibited_semesters: number[]
+  type: CourseType
+  /** Year level (legacy `semester` on the old frontend type). */
+  tingkat: number | null
+  konsentrasi?: string | null
+  jurusanId: Id
+  jurusan?: Jurusan
+  /** Server-computed display colour, e.g. `hsl(1,100%,95%)`. */
+  color?: string
 }
 
-/** Lightweight course info returned by `courseInfo/{id}`. */
+/** Write shape for `POST`/`PUT /api/courses` — mirrors `CourseRequest`. */
+export interface CoursePayload {
+  code: string
+  name: string
+  type: CourseType
+  tingkat?: number | null
+  konsentrasi?: string | null
+  jurusanId: Id
+}
+
+/** Lightweight course info returned by `GET /api/courses/{id}/info`. */
 export interface CourseInfo {
   id: Id
   code: string
   name: string
-  semester: number
-  concentration?: string | null
+  tingkat?: number | null
+  konsentrasi?: string | null
 }

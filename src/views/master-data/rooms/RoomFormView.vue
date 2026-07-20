@@ -5,7 +5,7 @@ import CRUPage from '@/layout/CRUPage.vue'
 import RoomFormFields from '@/components/rooms/RoomFormFields.vue'
 import { useApiForm } from '@/composables/useApiForm'
 import { roomsService, roomTypesService } from '@/services'
-import type { Room, Option } from '@/types'
+import type { Option, RoomPayload } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,15 +13,17 @@ const router = useRouter()
 const id = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEdit = computed(() => id.value !== null)
 
-const form = reactive<Room>({
-  code: '',
-  owner: '',
-  campus: '',
+const form = reactive<RoomPayload>({
+  roomCode: '',
+  name: '',
+  unitOwner: '',
+  location: '',
   building: '',
   floor: '',
-  capacity: 0,
-  parent_id: null,
-  room_type_id: 0,
+  capacity: null,
+  parentRoomId: null,
+  roomTypeId: null,
+  virtual: null,
   availabilities: [],
 })
 const roomTypeOptions = ref<Option[]>([])
@@ -30,15 +32,33 @@ const { errors, processing, submit } = useApiForm()
 
 onMounted(async () => {
   const [types, rooms] = await Promise.all([roomTypesService.list(), roomsService.list()])
-  roomTypeOptions.value = types.map((t) => ({ label: t.name, value: t.id! }))
+  roomTypeOptions.value = types.map((t) => ({ label: t.name, value: t.id }))
+  // A room cannot be its own parent.
   parentOptions.value = rooms
     .filter((r) => r.id !== id.value)
-    .map((r) => ({ label: r.code, value: r.id! }))
+    .map((r) => ({ label: r.roomCode, value: r.id }))
 
-  if (id.value !== null) {
-    const data = await roomsService.get(id.value)
-    Object.assign(form, data)
-  }
+  if (id.value === null) return
+
+  const data = await roomsService.get(id.value)
+  // Copy only writable fields — `id`, `childIds` and `roomType` are read-only.
+  form.roomCode = data.roomCode
+  form.name = data.name
+  form.unitOwner = data.unitOwner
+  form.location = data.location
+  form.building = data.building
+  form.floor = data.floor
+  form.capacity = data.capacity
+  form.parentRoomId = data.parentRoomId ?? null
+  form.roomTypeId = data.roomTypeId
+  form.virtual = data.virtual ?? null
+  form.availabilities = (data.availabilities ?? []).map((a) => ({
+    // `roomId` is required by RoomAvailableRequest but ignored server-side.
+    roomId: a.roomId ?? id.value!,
+    day: a.day,
+    startTime: a.startTime,
+    endTime: a.endTime,
+  }))
 })
 
 async function handleSubmit() {

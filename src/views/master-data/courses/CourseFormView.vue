@@ -4,8 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import CRUPage from '@/layout/CRUPage.vue'
 import CourseFormFields from '@/components/courses/CourseFormFields.vue'
 import { useApiForm } from '@/composables/useApiForm'
-import { coursesService, prodisService } from '@/services'
-import type { Course, Option } from '@/types'
+import { coursesService, jurusansService } from '@/services'
+import type { CoursePayload, Jurusan } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,26 +13,32 @@ const router = useRouter()
 const id = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEdit = computed(() => id.value !== null)
 
-const form = reactive<Course>({
+const form = reactive<CoursePayload>({
   code: '',
   name: '',
-  prodi_id: 0,
-  type: 'Wajib',
-  semester: 1,
-  concentration: null,
-  prohibited_course_ids: [],
-  prohibited_semesters: [],
+  type: 'Pilihan',
+  tingkat: null,
+  konsentrasi: null,
+  jurusanId: 0,
 })
-const prodiOptions = ref<Option[]>([])
+const jurusans = ref<Jurusan[]>([])
 const { errors, processing, submit } = useApiForm()
 
 onMounted(async () => {
-  const prodis = await prodisService.list()
-  prodiOptions.value = prodis.map((p) => ({ label: p.name, value: p.id! }))
+  const [jurusanList, data] = await Promise.all([
+    jurusansService.list(),
+    id.value !== null ? coursesService.get(id.value) : Promise.resolve(null),
+  ])
+  jurusans.value = jurusanList
 
-  if (id.value !== null) {
-    const data = await coursesService.get(id.value)
-    Object.assign(form, data)
+  if (data) {
+    // Copy only the writable fields — `jurusan`/`color`/`id` are read-only.
+    form.code = data.code
+    form.name = data.name
+    form.type = data.type
+    form.tingkat = data.tingkat
+    form.konsentrasi = data.konsentrasi ?? null
+    form.jurusanId = data.jurusanId
   }
 })
 
@@ -52,7 +58,7 @@ async function handleSubmit() {
       </Message>
     </template>
 
-    <CourseFormFields :model-value="form" :errors="errors" :prodi-options="prodiOptions" />
+    <CourseFormFields :model-value="form" :errors="errors" :jurusans="jurusans" />
 
     <div class="flex justify-end gap-2 mt-6">
       <Button

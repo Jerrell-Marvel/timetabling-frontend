@@ -45,7 +45,7 @@ const menus = ref<MenuItemType[]>([
     label: 'Pengaturan',
     items: [
       { label: 'Semester', icon: 'pi pi-fw pi-calendar', to: '/semesters', adminRequired: true },
-      { label: 'Program Studi', icon: 'pi pi-fw pi-sitemap', to: '/prodis', adminRequired: true },
+      { label: 'Jurusan', icon: 'pi pi-fw pi-sitemap', to: '/jurusans', adminRequired: true },
       { label: 'Tipe Ruangan', icon: 'pi pi-fw pi-box', to: '/room-types', adminRequired: true },
       {
         label: 'Tipe Aktivitas',

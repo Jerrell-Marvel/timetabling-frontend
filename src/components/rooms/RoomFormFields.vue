@@ -1,6 +1,10 @@
 <script setup lang="ts">
-/** Six-day availability grid replaces the legacy per-day checkbox+time rows. */
-import type { Room, Option } from '@/types'
+/**
+ * Fields mirror `RoomRequest` exactly. The availability grid writes
+ * `{ day: 1..6, startTime, endTime }` — the backend keys days numerically
+ * (1 = Senin … 6 = Sabtu), not by Indonesian name.
+ */
+import type { Option, RoomPayload } from '@/types'
 
 defineProps<{
   errors?: Record<string, string>
@@ -8,32 +12,38 @@ defineProps<{
   parentOptions: Option[]
 }>()
 
-const modelValue = defineModel<Room>({ required: true })
+const modelValue = defineModel<RoomPayload>({ required: true })
 
-const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+const days: { label: string; value: number }[] = [
+  { label: 'Senin', value: 1 },
+  { label: 'Selasa', value: 2 },
+  { label: 'Rabu', value: 3 },
+  { label: 'Kamis', value: 4 },
+  { label: 'Jumat', value: 5 },
+  { label: 'Sabtu', value: 6 },
+]
 
-function entryFor(day: string) {
+function entryFor(day: number) {
   return modelValue.value.availabilities.find((a) => a.day === day)
 }
 
-function isEnabled(day: string) {
+function isEnabled(day: number) {
   return entryFor(day) !== undefined
 }
 
-function toggleDay(day: string, enabled: boolean) {
+function toggleDay(day: number, enabled: boolean) {
   if (enabled) {
     modelValue.value.availabilities = [
       ...modelValue.value.availabilities,
-      { day, start: '07:00', end: '17:00' },
+      // `roomId` is a required-but-ignored placeholder; the server re-links it.
+      { roomId: 0, day, startTime: '07:00', endTime: '17:00' },
     ]
   } else {
-    modelValue.value.availabilities = modelValue.value.availabilities.filter(
-      (a) => a.day !== day,
-    )
+    modelValue.value.availabilities = modelValue.value.availabilities.filter((a) => a.day !== day)
   }
 }
 
-function setTime(day: string, key: 'start' | 'end', value: string) {
+function setTime(day: number, key: 'startTime' | 'endTime', value: string) {
   const entry = entryFor(day)
   if (entry) entry[key] = value
 }
@@ -57,51 +67,83 @@ function fromDate(value: unknown): string {
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Kode</label>
-        <InputText v-model="modelValue.code" class="w-full" :invalid="!!errors?.code" />
-        <Message v-if="errors?.code" severity="error" size="small" variant="simple">{{
-          errors.code
+        <InputText v-model="modelValue.roomCode" class="w-full" :invalid="!!errors?.roomCode" />
+        <Message v-if="errors?.roomCode" severity="error" size="small" variant="simple">{{
+          errors.roomCode
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Pemilik</label>
-        <InputText v-model="modelValue.owner" class="w-full" />
+        <label class="block text-sm font-medium text-surface-700 mb-1">Nama</label>
+        <InputText v-model="modelValue.name" class="w-full" :invalid="!!errors?.name" />
+        <Message v-if="errors?.name" severity="error" size="small" variant="simple">{{
+          errors.name
+        }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Kampus</label>
-        <InputText v-model="modelValue.campus" class="w-full" />
+        <label class="block text-sm font-medium text-surface-700 mb-1">Unit Pemilik</label>
+        <InputText v-model="modelValue.unitOwner" class="w-full" :invalid="!!errors?.unitOwner" />
+        <Message v-if="errors?.unitOwner" severity="error" size="small" variant="simple">{{
+          errors.unitOwner
+        }}</Message>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-700 mb-1">Lokasi</label>
+        <InputText v-model="modelValue.location" class="w-full" :invalid="!!errors?.location" />
+        <Message v-if="errors?.location" severity="error" size="small" variant="simple">{{
+          errors.location
+        }}</Message>
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Gedung</label>
-        <InputText v-model="modelValue.building" class="w-full" />
+        <InputText v-model="modelValue.building" class="w-full" :invalid="!!errors?.building" />
+        <Message v-if="errors?.building" severity="error" size="small" variant="simple">{{
+          errors.building
+        }}</Message>
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Lantai</label>
-        <InputText v-model="modelValue.floor" class="w-full" />
+        <InputText v-model="modelValue.floor" class="w-full" :invalid="!!errors?.floor" />
+        <Message v-if="errors?.floor" severity="error" size="small" variant="simple">{{
+          errors.floor
+        }}</Message>
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Kapasitas</label>
-        <InputNumber v-model="modelValue.capacity" :min="0" class="w-full" />
+        <InputNumber v-model="modelValue.capacity" :min="0" class="w-full" :invalid="!!errors?.capacity" />
+        <Message v-if="errors?.capacity" severity="error" size="small" variant="simple">{{
+          errors.capacity
+        }}</Message>
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Tipe Ruangan</label>
         <Select
-          v-model="modelValue.room_type_id"
+          v-model="modelValue.roomTypeId"
           :options="roomTypeOptions"
           option-label="label"
           option-value="value"
+          placeholder="Pilih Tipe"
           class="w-full"
+          :invalid="!!errors?.roomTypeId"
         />
+        <Message v-if="errors?.roomTypeId" severity="error" size="small" variant="simple">{{
+          errors.roomTypeId
+        }}</Message>
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Ruangan Induk</label>
         <Select
-          v-model="modelValue.parent_id"
+          v-model="modelValue.parentRoomId"
           :options="parentOptions"
           option-label="label"
           option-value="value"
           show-clear
+          placeholder="Tidak ada"
           class="w-full"
         />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-700 mb-1">Virtual</label>
+        <InputText v-model="modelValue.virtual" class="w-full" />
       </div>
     </div>
 
@@ -110,32 +152,32 @@ function fromDate(value: unknown): string {
       <div class="flex flex-col gap-2">
         <div
           v-for="day in days"
-          :key="day"
+          :key="day.value"
           class="grid grid-cols-4 items-center gap-2 p-2 bg-surface-50 rounded-lg border border-surface-100"
         >
           <label class="flex items-center gap-2 text-sm text-surface-700">
             <Checkbox
-              :model-value="isEnabled(day)"
+              :model-value="isEnabled(day.value)"
               binary
-              @update:model-value="(v) => toggleDay(day, v)"
+              @update:model-value="(v) => toggleDay(day.value, v)"
             />
-            {{ day }}
+            {{ day.label }}
           </label>
           <DatePicker
-            :model-value="toDate(entryFor(day)?.start)"
-            @update:model-value="setTime(day, 'start', fromDate($event))"
+            :model-value="toDate(entryFor(day.value)?.startTime)"
+            @update:model-value="setTime(day.value, 'startTime', fromDate($event))"
             time-only
             hour-format="24"
             placeholder="Mulai"
-            :disabled="!isEnabled(day)"
+            :disabled="!isEnabled(day.value)"
           />
           <DatePicker
-            :model-value="toDate(entryFor(day)?.end)"
-            @update:model-value="setTime(day, 'end', fromDate($event))"
+            :model-value="toDate(entryFor(day.value)?.endTime)"
+            @update:model-value="setTime(day.value, 'endTime', fromDate($event))"
             time-only
             hour-format="24"
             placeholder="Selesai"
-            :disabled="!isEnabled(day)"
+            :disabled="!isEnabled(day.value)"
           />
         </div>
       </div>

@@ -56,7 +56,14 @@ async function load() {
 onMounted(load)
 
 async function onDelete(row: Lecturer) {
-  await lecturersService.destroy(row.id!)
+  // `emit('delete', row)` does not await this handler, so a rejection here would
+  // surface as an unhandled promise rejection. The interceptor already toasts the
+  // reason (e.g. the lecturer is assigned to an activity) — just stop it here.
+  try {
+    await lecturersService.destroy(row.id!)
+  } catch {
+    return
+  }
   toast.success('Pengajar berhasil dihapus.')
   await load()
 }

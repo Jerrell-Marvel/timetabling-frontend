@@ -11,6 +11,7 @@ import {
   roomTypesService,
   semestersService,
 } from '@/services'
+import { semesterLabel } from '@/types'
 import type { Activity } from '@/types'
 
 const route = useRoute()
@@ -34,8 +35,8 @@ onMounted(async () => {
     lecturersService.list(),
   ])
   courseName.value = course.name
-  semesterName.value = semester.name
-  roomNames.value = rooms.filter((r) => data.room_ids.includes(r.id!)).map((r) => r.code)
+  semesterName.value = semesterLabel(semester)
+  roomNames.value = rooms.filter((r) => data.room_ids.includes(r.id!)).map((r) => r.roomCode)
   roomTypeNames.value = roomTypes
     .filter((rt) => data.room_type_ids.includes(rt.id!))
     .map((rt) => rt.name)

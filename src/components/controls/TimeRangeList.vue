@@ -1,30 +1,31 @@
 <script setup lang="ts">
 /**
  * Replaces `MultipleTimeSlotComponent`. Used twice on the Lecturer form — once
- * per `type` (`Unavailable` / `Priority`, legacy `lecturer_times.type`) — with
- * two separate `modelValue` arrays. Rows mutate in place (the caller's
- * `modelValue` is expected to live inside a `reactive()` form).
+ * per `type` (`NOT_AVAILABLE` / `PRIORITY`) — with two separate `modelValue`
+ * arrays. Rows mutate in place (the caller's `modelValue` is expected to live
+ * inside a `reactive()` form).
  */
 import RepeatableRows from './RepeatableRows.vue'
-import type { LecturerTime } from '@/types'
+import type { LecturerTime, LecturerTimeType } from '@/types'
 
 const props = defineProps<{
   modelValue: LecturerTime[]
-  type: 'Unavailable' | 'Priority'
+  type: LecturerTimeType
 }>()
 defineEmits<{ 'update:modelValue': [value: LecturerTime[]] }>()
 
+// `day` is the backend's 1-based index (1 = Senin … 6 = Sabtu).
 const dayOptions = [
-  { label: 'Senin', value: 'Senin' },
-  { label: 'Selasa', value: 'Selasa' },
-  { label: 'Rabu', value: 'Rabu' },
-  { label: 'Kamis', value: 'Kamis' },
-  { label: 'Jumat', value: 'Jumat' },
-  { label: 'Sabtu', value: 'Sabtu' },
+  { label: 'Senin', value: 1 },
+  { label: 'Selasa', value: 2 },
+  { label: 'Rabu', value: 3 },
+  { label: 'Kamis', value: 4 },
+  { label: 'Jumat', value: 5 },
+  { label: 'Sabtu', value: 6 },
 ]
 
 function newRow(): LecturerTime {
-  return { day: 'Senin', start: '07:00', end: '08:00', type: props.type }
+  return { day: 1, startTime: '07:00', endTime: '08:00', type: props.type }
 }
 
 function toDate(value: string): Date | null {
@@ -58,15 +59,15 @@ function fromDate(value: unknown): string {
           placeholder="Hari"
         />
         <DatePicker
-          :model-value="toDate(row.start)"
-          @update:model-value="row.start = fromDate($event)"
+          :model-value="toDate(row.startTime)"
+          @update:model-value="row.startTime = fromDate($event)"
           time-only
           hour-format="24"
           placeholder="Mulai"
         />
         <DatePicker
-          :model-value="toDate(row.end)"
-          @update:model-value="row.end = fromDate($event)"
+          :model-value="toDate(row.endTime)"
+          @update:model-value="row.endTime = fromDate($event)"
           time-only
           hour-format="24"
           placeholder="Selesai"

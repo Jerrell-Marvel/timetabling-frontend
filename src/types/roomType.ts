@@ -1,7 +1,12 @@
 import type { Id } from './common'
 
-/** Name-only reference entity (`room_types`). */
+/** Room type (`room_types`), mirroring `RoomTypeResponse` verbatim. */
 export interface RoomType {
-  id?: Id
+  id: Id
+  name: string
+}
+
+/** Write shape for `POST`/`PUT /api/room-types` — mirrors `RoomTypeRequest`. */
+export interface RoomTypePayload {
   name: string
 }

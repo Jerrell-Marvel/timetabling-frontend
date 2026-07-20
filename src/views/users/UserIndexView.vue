@@ -37,7 +37,12 @@ function canDelete(row: User) {
 }
 
 async function onDelete(row: User) {
-  await usersService.destroy(row.id)
+  // Not awaited by `emit` — swallow rejections (the interceptor toasts the reason).
+  try {
+    await usersService.destroy(row.id)
+  } catch {
+    return
+  }
   toast.success('Pengguna berhasil dihapus.')
   await load()
 }

@@ -1,38 +1,31 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ResourceListLayout, ResourceTable } from '@/components/base'
 import type { ResourceColumn } from '@/components/base'
-import { settingsService, semestersService } from '@/services'
-import type { Setting, Semester } from '@/types'
+import { settingsService } from '@/services'
+import type { Setting } from '@/types'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const toast = useToast()
 const rows = ref<Setting[]>([])
-const semesters = ref<Semester[]>([])
 const loading = ref(false)
 
-const semesterNameById = computed(() => new Map(semesters.value.map((s) => [s.id, s.name])))
-
-const columns = computed<ResourceColumn<Setting>[]>(() => [
+// `SettingResponse` already carries the semester label, so no second request.
+const columns: ResourceColumn<Setting>[] = [
   { field: 'name', header: 'Nama', sortable: true },
   {
-    field: 'semester_id',
+    field: 'typeAndSemester',
     header: 'Semester',
-    format: (row) => semesterNameById.value.get(row.semester_id) ?? row.semester_id,
+    format: (row) => row.typeAndSemester ?? '-',
   },
-])
+]
 
 async function load() {
   loading.value = true
   try {
-    const [settings, semesterList] = await Promise.all([
-      settingsService.list(),
-      semestersService.list(),
-    ])
-    rows.value = settings
-    semesters.value = semesterList
+    rows.value = await settingsService.list()
   } finally {
     loading.value = false
   }
@@ -40,7 +33,12 @@ async function load() {
 onMounted(load)
 
 async function onDelete(row: Setting) {
-  await settingsService.destroy(row.id!)
+  // Not awaited by `emit` — swallow rejections (the interceptor toasts the reason).
+  try {
+    await settingsService.destroy(row.id)
+  } catch {
+    return
+  }
   toast.success('Pengaturan berhasil dihapus.')
   await load()
 }

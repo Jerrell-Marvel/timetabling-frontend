@@ -1,64 +1,44 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import RepeatableRows from '@/components/controls/RepeatableRows.vue'
-import HierarchySelector from '@/components/controls/HierarchySelector.vue'
-import ActivityPickList from '@/components/controls/ActivityPickList.vue'
+/**
+ * Every control here maps 1:1 onto a `SettingableType` the backend actually
+ * persists (`setting_constraints.settingable_type`). Values are kept as the
+ * **strings** the API uses — stringified ids, hours 7–23, day indexes 1–6.
+ *
+ * Not rendered: `activityType`. The backend has no ActivityType listing
+ * endpoint, so there is no source for its labels; the parent passes its values
+ * through untouched instead of showing a picker that cannot be populated.
+ */
+import type { Option, SettingFormState } from '@/types'
 import CheckboxGroup from '@/components/controls/CheckboxGroup.vue'
-import type { Setting, Option, Prodi } from '@/types'
-import type { TreeNode } from 'primevue/treenode'
 
-const props = defineProps<{
+defineProps<{
   errors?: Record<string, string>
-  prodis: Prodi[]
-  activityOptions: Option[]
-  roomOptions: Option[]
-  roomTypeOptions: Option[]
+  /** Disabled on edit — the backend ignores `semesterId` on update. */
+  isEdit?: boolean
+  semesterOptions: Option[]
+  jurusanOptions: Option<string>[]
+  roomOptions: Option<string>[]
+  roomTypeOptions: Option<string>[]
+  activityOptions: Option<string>[]
 }>()
 
-const modelValue = defineModel<Setting>({ required: true })
+const modelValue = defineModel<SettingFormState>({ required: true })
 
-const dayOptions: Option<string>[] = [
-  { label: 'Senin', value: 'Senin' },
-  { label: 'Selasa', value: 'Selasa' },
-  { label: 'Rabu', value: 'Rabu' },
-  { label: 'Kamis', value: 'Kamis' },
-  { label: 'Jumat', value: 'Jumat' },
-  { label: 'Sabtu', value: 'Sabtu' },
+/** `hari` — 1 = Senin … 6 = Sabtu, matching `SettingDefaultsProvider`. */
+const hariOptions: Option<string>[] = [
+  { label: 'Senin', value: '1' },
+  { label: 'Selasa', value: '2' },
+  { label: 'Rabu', value: '3' },
+  { label: 'Kamis', value: '4' },
+  { label: 'Jumat', value: '5' },
+  { label: 'Sabtu', value: '6' },
 ]
 
-// Prodi restriction as a cascading tree (concentrations as children); only
-// top-level (prodi) keys are persisted into `prodi_ids`.
-const prodiTreeOptions = computed<TreeNode[]>(() =>
-  props.prodis.map((p) => ({
-    key: String(p.id),
-    label: p.name,
-    children: p.concentrations.map((c) => ({ key: `${p.id}::${c}`, label: c })),
-  })),
-)
-
-const prodiSelection = computed<string[]>({
-  get: () => modelValue.value.prodi_ids.map(String),
-  set: (keys) => {
-    modelValue.value.prodi_ids = keys.filter((k) => !k.includes('::')).map(Number)
-  },
+/** `waktu` — discrete start hours 7..23 (the backend stores hours, not ranges). */
+const waktuOptions: Option<string>[] = Array.from({ length: 17 }, (_, i) => {
+  const hour = i + 7
+  return { label: `${String(hour).padStart(2, '0')}:00`, value: String(hour) }
 })
-
-function newTimeRange() {
-  return { start: '07:00', end: '17:00' }
-}
-
-function toDate(value: string): Date | null {
-  if (!value) return null
-  const [h, m] = value.split(':').map(Number)
-  const date = new Date()
-  date.setHours(h ?? 0, m ?? 0, 0, 0)
-  return date
-}
-
-function fromDate(value: unknown): string {
-  if (!(value instanceof Date)) return ''
-  return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`
-}
 </script>
 
 <template>
@@ -72,69 +52,88 @@ function fromDate(value: unknown): string {
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold text-surface-800 mb-2">Program Studi</h3>
-      <HierarchySelector v-model="prodiSelection" :options="prodiTreeOptions" />
-    </div>
-
-    <div>
-      <h3 class="text-sm font-semibold text-surface-800 mb-2">Aktivitas Khusus</h3>
-      <ActivityPickList v-model="modelValue.activity_ids" :options="activityOptions" />
-    </div>
-
-    <div>
-      <h3 class="text-sm font-semibold text-surface-800 mb-2">Ruangan</h3>
-      <MultiSelect
-        v-model="modelValue.room_ids"
-        :options="roomOptions"
+      <label class="block text-sm font-medium text-surface-700 mb-1">Semester</label>
+      <Select
+        v-model="modelValue.semesterId"
+        :options="semesterOptions"
         option-label="label"
         option-value="value"
-        filter
-        class="w-full"
+        :disabled="isEdit"
+        show-clear
+        placeholder="Semester aktif"
+        class="w-full max-w-md"
+      />
+      <small class="text-surface-400">
+        {{
+          isEdit
+            ? 'Semester tidak dapat diubah setelah pengaturan dibuat.'
+            : 'Kosongkan untuk memakai semester aktif.'
+        }}
+      </small>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-surface-800 mb-2">Jurusan</h3>
+      <CheckboxGroup
+        v-model="modelValue.constraints.jurusan"
+        :options="jurusanOptions"
+        select-all-label="Pilih Semua Jurusan"
       />
     </div>
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Tipe Ruangan</h3>
-      <MultiSelect
-        v-model="modelValue.room_type_ids"
+      <CheckboxGroup
+        v-model="modelValue.constraints.roomType"
         :options="roomTypeOptions"
+        select-all-label="Pilih Semua Tipe Ruangan"
+      />
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-surface-800 mb-2">Ruangan</h3>
+      <MultiSelect
+        v-model="modelValue.constraints.room"
+        :options="roomOptions"
         option-label="label"
         option-value="value"
+        filter
+        display="chip"
+        placeholder="Pilih ruangan"
+        class="w-full"
+      />
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-surface-800 mb-2">Aktivitas Khusus</h3>
+      <MultiSelect
+        v-model="modelValue.constraints.activity"
+        :options="activityOptions"
+        option-label="label"
+        option-value="value"
+        filter
+        display="chip"
+        placeholder="Pilih aktivitas"
         class="w-full"
       />
     </div>
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Hari</h3>
-      <CheckboxGroup v-model="modelValue.days" :options="dayOptions" select-all-label="Pilih Semua Hari" />
+      <CheckboxGroup
+        v-model="modelValue.constraints.hari"
+        :options="hariOptions"
+        select-all-label="Pilih Semua Hari"
+      />
     </div>
 
     <div>
-      <h3 class="text-sm font-semibold text-surface-800 mb-2">Rentang Waktu</h3>
-      <RepeatableRows
-        v-model="modelValue.time_ranges"
-        :new-row="newTimeRange"
-        add-label="Tambah Rentang Waktu"
-      >
-        <template #row="{ row }">
-          <div class="grid grid-cols-2 gap-2">
-            <DatePicker
-              :model-value="toDate(row.start)"
-              @update:model-value="row.start = fromDate($event)"
-              time-only
-              hour-format="24"
-              placeholder="Mulai"
-            />
-            <DatePicker
-              :model-value="toDate(row.end)"
-              @update:model-value="row.end = fromDate($event)"
-              time-only
-              hour-format="24"
-              placeholder="Selesai"
-            />
-          </div>
-        </template>
-      </RepeatableRows>
+      <h3 class="text-sm font-semibold text-surface-800 mb-2">Jam</h3>
+      <CheckboxGroup
+        v-model="modelValue.constraints.waktu"
+        :options="waktuOptions"
+        select-all-label="Pilih Semua Jam"
+      />
     </div>
   </div>
 </template>

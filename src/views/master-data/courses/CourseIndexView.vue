@@ -1,31 +1,29 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ResourceListLayout, ResourceTable, ImportDialog, DownloadMenu } from '@/components/base'
 import type { ResourceColumn, ImportEndpoint, DownloadItem } from '@/components/base'
-import { coursesService, prodisService } from '@/services'
-import type { Course, Prodi } from '@/types'
+import { coursesService } from '@/services'
+import type { Course } from '@/types'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const toast = useToast()
 const rows = ref<Course[]>([])
-const prodis = ref<Prodi[]>([])
 const loading = ref(false)
 const importVisible = ref(false)
 
-const prodiNameById = computed(() => new Map(prodis.value.map((p) => [p.id, p.name])))
-
-const columns = computed<ResourceColumn<Course>[]>(() => [
+// `CourseResponse` embeds the full `jurusan`, so no second request is needed.
+const columns: ResourceColumn<Course>[] = [
   { field: 'code', header: 'Kode', sortable: true },
   { field: 'name', header: 'Nama', sortable: true },
   {
-    field: 'prodi_id',
-    header: 'Program Studi',
-    format: (row) => prodiNameById.value.get(row.prodi_id) ?? row.prodi_id,
+    field: 'jurusanId',
+    header: 'Jurusan',
+    format: (row) => row.jurusan?.name ?? row.jurusanId,
   },
-  { field: 'semester', header: 'Semester', sortable: true },
-])
+  { field: 'tingkat', header: 'Tingkat', sortable: true },
+]
 
 const importEndpoints: ImportEndpoint[] = [
   { key: 'base', label: 'Data Matakuliah', upload: (file) => coursesService.uploadCourse(file) },
@@ -42,9 +40,7 @@ const downloadItems: DownloadItem[] = [
 async function load() {
   loading.value = true
   try {
-    const [courses, prodiList] = await Promise.all([coursesService.list(), prodisService.list()])
-    rows.value = courses
-    prodis.value = prodiList
+    rows.value = await coursesService.list()
   } finally {
     loading.value = false
   }
@@ -52,7 +48,12 @@ async function load() {
 onMounted(load)
 
 async function onDelete(row: Course) {
-  await coursesService.destroy(row.id!)
+  // Not awaited by `emit` — swallow rejections (the interceptor toasts the reason).
+  try {
+    await coursesService.destroy(row.id!)
+  } catch {
+    return
+  }
   toast.success('Matakuliah berhasil dihapus.')
   await load()
 }

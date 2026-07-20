@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Replaces `TreeViewComponent` + `TreeNodeComponent`. A cascading checkbox tree
- * over caller-supplied `options` (e.g. prodi → concentration); emits the flat
+ * over caller-supplied `options` (e.g. jurusan → konsentrasi); emits the flat
  * array of checked node keys via `v-model`.
  */
 import { computed } from 'vue'

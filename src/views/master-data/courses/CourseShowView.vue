@@ -3,19 +3,17 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CRUPage from '@/layout/CRUPage.vue'
 import CourseDetail from '@/components/courses/CourseDetail.vue'
-import { coursesService, prodisService } from '@/services'
+import { coursesService } from '@/services'
 import type { Course } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const course = ref<Course | null>(null)
-const prodiName = ref<string | undefined>()
 
 onMounted(async () => {
-  const data = await coursesService.get(Number(route.params.id))
-  course.value = data
-  const prodi = await prodisService.get(data.prodi_id)
-  prodiName.value = prodi.name
+  // `CourseResponse` embeds `jurusan`, so the department name comes back with
+  // the course itself — no follow-up request.
+  course.value = await coursesService.get(Number(route.params.id))
 })
 </script>
 
@@ -28,6 +26,6 @@ onMounted(async () => {
         @click="router.push({ name: 'courses.edit', params: { id: route.params.id } })"
       />
     </div>
-    <CourseDetail v-if="course" :course="course" :prodi-name="prodiName" />
+    <CourseDetail v-if="course" :course="course" />
   </CRUPage>
 </template>

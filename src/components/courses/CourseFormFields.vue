@@ -1,61 +1,54 @@
 <script setup lang="ts">
 /**
- * Dependent fetches (the trickiest parity point): selecting a program studi
- * reloads the concentration options (`konsentrasi/{id}`) and the candidate
- * conflict-course options (`courselist/{id}`), showing each control's loading
- * state while in flight — matching legacy `MultipleCoursesComponent`.
+ * Fields mirror `CourseRequest` exactly: code, name, type, tingkat, konsentrasi,
+ * jurusanId.
+ *
+ * Selecting a Jurusan reloads the concentration options from
+ * `GET /api/jurusans/{id}/konsentrasi`.
+ *
+ * NOTE: the legacy "Semester Bentrok" / "Matakuliah Bentrok" pickers were
+ * removed — `CourseRequest` accepts no such fields, so anything chosen there was
+ * silently discarded on save. They belong to `course_constraints`, which this
+ * backend does not yet expose.
  */
 import { ref, watch } from 'vue'
-import SemesterConflictList from '@/components/controls/SemesterConflictList.vue'
-import CourseConflictList from '@/components/controls/CourseConflictList.vue'
-import { coursesService } from '@/services'
-import type { Course, Option } from '@/types'
+import { jurusansService } from '@/services'
+import type { CoursePayload, CourseType, Jurusan, Option } from '@/types'
 
-defineProps<{
+const props = defineProps<{
   errors?: Record<string, string>
-  prodiOptions: Option[]
+  jurusans: Jurusan[]
 }>()
 
-const modelValue = defineModel<Course>({ required: true })
+const modelValue = defineModel<CoursePayload>({ required: true })
 
-const typeOptions = [
+const typeOptions: { label: string; value: CourseType }[] = [
   { label: 'Wajib', value: 'Wajib' },
   { label: 'Pilihan', value: 'Pilihan' },
 ]
-const semesterOptions = Array.from({ length: 8 }, (_, i) => ({
-  label: `Semester ${i + 1}`,
+const tingkatOptions = Array.from({ length: 8 }, (_, i) => ({
+  label: `Tingkat ${i + 1}`,
   value: i + 1,
 }))
 
-const concentrationOptions = ref<Option<string>[]>([])
-const courseOptions = ref<Option[]>([])
-const loadingConcentration = ref(false)
-const loadingCourses = ref(false)
+const konsentrasiOptions = ref<Option<string>[]>([])
+const loadingKonsentrasi = ref(false)
 
-async function loadDependent(prodiId: number) {
-  loadingConcentration.value = true
-  loadingCourses.value = true
+async function loadKonsentrasi(jurusanId: number) {
+  loadingKonsentrasi.value = true
   try {
-    const [concentrations, courses] = await Promise.all([
-      coursesService.konsentrasi(prodiId),
-      coursesService.courselist(prodiId),
-    ])
-    concentrationOptions.value = concentrations.map((c) => ({ label: c, value: c }))
-    courseOptions.value = courses
-      .filter((c) => c.id !== modelValue.value.id)
-      .map((c) => ({ label: c.name, value: c.id! }))
+    const list = await jurusansService.konsentrasi(jurusanId)
+    konsentrasiOptions.value = list.map((k) => ({ label: k.konsentrasi, value: k.konsentrasi }))
   } finally {
-    loadingConcentration.value = false
-    loadingCourses.value = false
+    loadingKonsentrasi.value = false
   }
 }
 
 watch(
-  () => modelValue.value.prodi_id,
-  (prodiId) => {
-    concentrationOptions.value = []
-    courseOptions.value = []
-    if (prodiId) loadDependent(prodiId)
+  () => modelValue.value.jurusanId,
+  (jurusanId) => {
+    konsentrasiOptions.value = []
+    if (jurusanId) loadKonsentrasi(jurusanId)
   },
   { immediate: true },
 )
@@ -79,15 +72,20 @@ watch(
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Program Studi</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1">Jurusan</label>
         <Select
-          v-model="modelValue.prodi_id"
-          :options="prodiOptions"
-          option-label="label"
-          option-value="value"
+          v-model="modelValue.jurusanId"
+          :options="props.jurusans"
+          option-label="name"
+          option-value="id"
           filter
+          placeholder="Pilih Jurusan"
           class="w-full"
+          :invalid="!!errors?.jurusanId"
         />
+        <Message v-if="errors?.jurusanId" severity="error" size="small" variant="simple">{{
+          errors.jurusanId
+        }}</Message>
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Tipe</label>
@@ -97,45 +95,36 @@ watch(
           option-label="label"
           option-value="value"
           class="w-full"
+          :invalid="!!errors?.type"
         />
+        <Message v-if="errors?.type" severity="error" size="small" variant="simple">{{
+          errors.type
+        }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Semester</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1">Tingkat</label>
         <Select
-          v-model="modelValue.semester"
-          :options="semesterOptions"
+          v-model="modelValue.tingkat"
+          :options="tingkatOptions"
           option-label="label"
           option-value="value"
+          show-clear
           class="w-full"
         />
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-700 mb-1">Konsentrasi</label>
         <Select
-          v-model="modelValue.concentration"
-          :options="concentrationOptions"
+          v-model="modelValue.konsentrasi"
+          :options="konsentrasiOptions"
           option-label="label"
           option-value="value"
-          :loading="loadingConcentration"
-          :disabled="!modelValue.prodi_id"
+          :loading="loadingKonsentrasi"
+          :disabled="!modelValue.jurusanId"
           show-clear
           class="w-full"
         />
       </div>
-    </div>
-
-    <div>
-      <h3 class="text-sm font-semibold text-surface-800 mb-2">Semester Bentrok</h3>
-      <SemesterConflictList v-model="modelValue.prohibited_semesters" />
-    </div>
-
-    <div>
-      <h3 class="text-sm font-semibold text-surface-800 mb-2">Matakuliah Bentrok</h3>
-      <CourseConflictList
-        v-model="modelValue.prohibited_course_ids"
-        :options="courseOptions"
-        :loading="loadingCourses"
-      />
     </div>
   </div>
 </template>

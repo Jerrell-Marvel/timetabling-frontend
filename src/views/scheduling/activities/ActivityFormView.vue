@@ -12,6 +12,7 @@ import {
   roomTypesService,
   semestersService,
 } from '@/services'
+import { semesterLabel } from '@/types'
 import type { Activity, Option } from '@/types'
 
 const route = useRoute()
@@ -49,9 +50,9 @@ onMounted(async () => {
     lecturersService.list(),
     activitiesService.list(),
   ])
-  semesterOptions.value = semesters.map((s) => ({ label: s.name, value: s.id! }))
+  semesterOptions.value = semesters.map((s) => ({ label: semesterLabel(s), value: s.id! }))
   courseOptions.value = courses.map((c) => ({ label: c.name, value: c.id! }))
-  roomOptions.value = rooms.map((r) => ({ label: r.code, value: r.id! }))
+  roomOptions.value = rooms.map((r) => ({ label: r.roomCode, value: r.id! }))
   roomTypeOptions.value = roomTypes.map((rt) => ({ label: rt.name, value: rt.id! }))
   lecturerOptions.value = lecturers.map((l) => ({ label: l.name, value: l.id! }))
   activityOptions.value = activities

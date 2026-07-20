@@ -3,46 +3,51 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ResourceListLayout, ResourceTable } from '@/components/base'
 import type { ResourceColumn } from '@/components/base'
-import { prodisService } from '@/services'
-import type { Prodi } from '@/types'
+import { jurusansService } from '@/services'
+import type { Jurusan } from '@/types'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const toast = useToast()
-const rows = ref<Prodi[]>([])
+const rows = ref<Jurusan[]>([])
 const loading = ref(false)
 
-const columns: ResourceColumn<Prodi>[] = [
+const columns: ResourceColumn<Jurusan>[] = [
   { field: 'name', header: 'Nama', sortable: true },
   { field: 'faculty', header: 'Fakultas' },
-  { field: 'degree', header: 'Jenjang' },
+  { field: 'jenjang', header: 'Jenjang', sortable: true },
 ]
 
 async function load() {
   loading.value = true
   try {
-    rows.value = await prodisService.list()
+    rows.value = await jurusansService.list()
   } finally {
     loading.value = false
   }
 }
 onMounted(load)
 
-async function onDelete(row: Prodi) {
-  await prodisService.destroy(row.id!)
-  toast.success('Program studi berhasil dihapus.')
+async function onDelete(row: Jurusan) {
+  // Not awaited by `emit` — swallow rejections (the interceptor toasts the reason).
+  try {
+    await jurusansService.destroy(row.id)
+  } catch {
+    return
+  }
+  toast.success('Jurusan berhasil dihapus.')
   await load()
 }
 </script>
 
 <template>
-  <ResourceListLayout title="Program Studi" create-to="/prodis/create" create-label="Tambah Prodi">
+  <ResourceListLayout title="Jurusan" create-to="/jurusans/create" create-label="Tambah Jurusan">
     <ResourceTable
       :rows="rows"
       :columns="columns"
       :loading="loading"
       :actions="['edit', 'delete']"
-      @edit="(row) => router.push({ name: 'prodis.edit', params: { id: String(row.id) } })"
+      @edit="(row) => router.push({ name: 'jurusans.edit', params: { id: String(row.id) } })"
       @delete="onDelete"
     />
   </ResourceListLayout>

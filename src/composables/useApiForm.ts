@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue'
 import { isValidationError } from '@/lib/api'
+import type { ApiFieldError } from '@/types'
 
 /**
  * Form submit + 422 field-error mapping. Consumed by every resource form to
@@ -17,11 +18,11 @@ export function useApiForm() {
     for (const key of Object.keys(errors)) delete errors[key]
   }
 
-  function setErrors(bag: Record<string, string[]>): void {
+  /** Map Spring's `fieldErrors` array, keeping the first message per field. */
+  function setErrors(fieldErrors: ApiFieldError[]): void {
     clearErrors()
-    for (const [field, messages] of Object.entries(bag)) {
-      const first = messages?.[0]
-      if (first) errors[field] = first
+    for (const { field, message } of fieldErrors) {
+      if (field && message && !(field in errors)) errors[field] = message
     }
   }
 
@@ -31,8 +32,9 @@ export function useApiForm() {
     try {
       return await request()
     } catch (error) {
-      if (isValidationError(error) && error.response?.data.errors) {
-        setErrors(error.response.data.errors)
+      const fieldErrors = error && isValidationError(error) ? error.response?.data.fieldErrors : undefined
+      if (fieldErrors?.length) {
+        setErrors(fieldErrors)
       }
       throw error
     } finally {

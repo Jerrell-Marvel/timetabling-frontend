@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ResourceListLayout, ResourceTable, ImportDialog, DownloadMenu } from '@/components/base'
 import type { ResourceColumn, ImportEndpoint, DownloadItem } from '@/components/base'
 import { activitiesService, coursesService, semestersService } from '@/services'
+import { semesterLabel } from '@/types'
 import type { Activity, Course, Semester } from '@/types'
 import { useToast } from '@/composables/useToast'
 
@@ -16,7 +17,9 @@ const loading = ref(false)
 const importVisible = ref(false)
 
 const courseNameById = computed(() => new Map(courses.value.map((c) => [c.id, c.name])))
-const semesterNameById = computed(() => new Map(semesters.value.map((s) => [s.id, s.name])))
+const semesterNameById = computed(
+  () => new Map(semesters.value.map((s) => [s.id, semesterLabel(s)])),
+)
 
 const columns = computed<ResourceColumn<Activity>[]>(() => [
   {

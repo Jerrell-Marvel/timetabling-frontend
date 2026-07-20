@@ -3,10 +3,10 @@ import type { RouteRecordRaw } from 'vue-router'
 const SemesterIndexView = () =>
   import('@/views/pengaturan/semesters/SemesterIndexView.vue')
 
-const ProdiIndexView = () =>
-  import('@/views/pengaturan/prodis/ProdiIndexView.vue')
-const ProdiFormView = () =>
-  import('@/views/pengaturan/prodis/ProdiFormView.vue')
+const JurusanIndexView = () =>
+  import('@/views/pengaturan/jurusans/JurusanIndexView.vue')
+const JurusanFormView = () =>
+  import('@/views/pengaturan/jurusans/JurusanFormView.vue')
 
 const RoomTypeIndexView = () =>
   import('@/views/pengaturan/room-types/RoomTypeIndexView.vue')
@@ -27,24 +27,24 @@ export const pengaturanRoutes: RouteRecordRaw[] = [
     meta: { title: 'Semester', requiresAdmin: true },
   },
 
-  // --- Program Studi (Prodis) ---
+  // --- Jurusan ---
   {
-    path: 'prodis',
-    name: 'prodis.index',
-    component: ProdiIndexView,
-    meta: { title: 'Program Studi', requiresAdmin: true },
+    path: 'jurusans',
+    name: 'jurusans.index',
+    component: JurusanIndexView,
+    meta: { title: 'Jurusan', requiresAdmin: true },
   },
   {
-    path: 'prodis/create',
-    name: 'prodis.create',
-    component: ProdiFormView,
-    meta: { title: 'Tambah Program Studi', requiresAdmin: true },
+    path: 'jurusans/create',
+    name: 'jurusans.create',
+    component: JurusanFormView,
+    meta: { title: 'Tambah Jurusan', requiresAdmin: true },
   },
   {
-    path: 'prodis/:id/edit',
-    name: 'prodis.edit',
-    component: ProdiFormView,
-    meta: { title: 'Edit Program Studi', requiresAdmin: true },
+    path: 'jurusans/:id/edit',
+    name: 'jurusans.edit',
+    component: JurusanFormView,
+    meta: { title: 'Edit Jurusan', requiresAdmin: true },
   },
 
   // --- Room Types (Tipe Ruangan) ---

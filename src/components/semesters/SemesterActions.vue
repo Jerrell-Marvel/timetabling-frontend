@@ -6,6 +6,7 @@
 import { onMounted, ref } from 'vue'
 import { ConfirmActionDialog } from '@/components/base'
 import { semestersService } from '@/services'
+import { semesterLabel } from '@/types'
 import type { Semester } from '@/types'
 
 const semesters = ref<Semester[]>([])
@@ -38,7 +39,7 @@ function addNext() {
 
 function markCurrent(semester: Semester) {
   confirmDialog.value?.confirm({
-    message: `Jadikan "${semester.name}" sebagai semester aktif?`,
+    message: `Jadikan "${semesterLabel(semester)}" sebagai semester aktif?`,
     header: 'Jadikan Aktif',
     withProgress: true,
     progressLabel: 'MEMPERBARUI SEMESTER AKTIF…',
@@ -52,7 +53,7 @@ function markCurrent(semester: Semester) {
 
 function duplicateSemester(semester: Semester) {
   confirmDialog.value?.confirm({
-    message: `Duplikat semester "${semester.name}"?`,
+    message: `Duplikat semester "${semesterLabel(semester)}"?`,
     header: 'Duplikat Semester',
     withProgress: true,
     progressLabel: 'MENDUPLIKASI SEMESTER…',
@@ -66,7 +67,7 @@ function duplicateSemester(semester: Semester) {
 
 function resetCurrent(semester: Semester) {
   confirmDialog.value?.confirm({
-    message: `Reset status aktif semester "${semester.name}"?`,
+    message: `Reset status aktif semester "${semesterLabel(semester)}"?`,
     header: 'Reset Semester Aktif',
     acceptSeverity: 'danger',
     acceptLabel: 'Reset',
@@ -88,12 +89,12 @@ function resetCurrent(semester: Semester) {
     </div>
 
     <DataTable :value="semesters" :loading="loading" striped-rows>
-      <Column field="name" header="Nama" />
-      <Column field="year" header="Tahun" />
+      <Column field="type" header="Tipe" />
+      <Column field="academicYear" header="Tahun Ajaran" />
       <Column header="Status">
         <template #body="{ data }">
           <span
-            v-if="data.is_current"
+            v-if="data.current"
             class="px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium"
           >
             Aktif
@@ -104,7 +105,7 @@ function resetCurrent(semester: Semester) {
         <template #body="{ data }">
           <div class="flex items-center gap-1 whitespace-nowrap">
             <Button
-              v-if="!data.is_current"
+              v-if="!data.current"
               label="Jadikan Aktif"
               text
               size="small"
@@ -119,7 +120,7 @@ function resetCurrent(semester: Semester) {
               @click="duplicateSemester(data)"
             />
             <Button
-              v-if="data.is_current"
+              v-if="data.current"
               label="Reset"
               icon="pi pi-refresh"
               text

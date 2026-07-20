@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import CRUPage from '@/layout/CRUPage.vue'
 import { useApiForm } from '@/composables/useApiForm'
 import { roomTypesService } from '@/services'
-import type { RoomType } from '@/types'
+import type { RoomTypePayload } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,13 +12,14 @@ const router = useRouter()
 const id = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEdit = computed(() => id.value !== null)
 
-const form = reactive<RoomType>({ name: '' })
+// `RoomTypeRequest` accepts only `name` — `id` is not part of the payload.
+const form = reactive<RoomTypePayload>({ name: '' })
 const { errors, processing, submit } = useApiForm()
 
 onMounted(async () => {
   if (id.value !== null) {
     const data = await roomTypesService.get(id.value)
-    Object.assign(form, data)
+    form.name = data.name
   }
 })
 

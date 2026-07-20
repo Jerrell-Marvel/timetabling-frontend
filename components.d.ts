@@ -42,6 +42,7 @@ declare module 'vue' {
     InputIcon: typeof import('primevue/inputicon')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
+    JurusanFormFields: typeof import('./src/components/jurusans/JurusanFormFields.vue')['default']
     LecturerDetail: typeof import('./src/components/lecturers/LecturerDetail.vue')['default']
     LecturerFormFields: typeof import('./src/components/lecturers/LecturerFormFields.vue')['default']
     LoadingOverlay: typeof import('./src/components/base/LoadingOverlay.vue')['default']
