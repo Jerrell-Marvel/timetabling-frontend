@@ -3,38 +3,41 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ResourceListLayout, ResourceTable, ImportDialog, DownloadMenu } from '@/components/base'
 import type { ResourceColumn, ImportEndpoint, DownloadItem } from '@/components/base'
-import { activitiesService, coursesService, semestersService } from '@/services'
+import { activitiesService, semestersService } from '@/services'
 import { semesterLabel } from '@/types'
-import type { Activity, Course, Semester } from '@/types'
+import type { Activity, Semester } from '@/types'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const toast = useToast()
 const rows = ref<Activity[]>([])
-const courses = ref<Course[]>([])
 const semesters = ref<Semester[]>([])
 const loading = ref(false)
 const importVisible = ref(false)
 
-const courseNameById = computed(() => new Map(courses.value.map((c) => [c.id, c.name])))
 const semesterNameById = computed(
   () => new Map(semesters.value.map((s) => [s.id, semesterLabel(s)])),
 )
 
+// `courseName` and `activityTypeName` come denormalized on ActivityResponse, so
+// only the semester still needs a client-side lookup.
 const columns = computed<ResourceColumn<Activity>[]>(() => [
   {
-    field: 'course_id',
+    field: 'courseName',
     header: 'Matakuliah',
-    format: (row) => courseNameById.value.get(row.course_id) ?? row.course_id,
+    format: (row) => (row.courseCode ? `${row.courseCode} — ${row.courseName}` : row.courseName),
+    sortable: true,
   },
+  { field: 'courseClass', header: 'Kelas', sortable: true },
+  { field: 'courseSession', header: 'Sesi', sortable: true },
+  { field: 'activityTypeName', header: 'Jenis' },
   {
-    field: 'semester_id',
+    field: 'semesterId',
     header: 'Semester',
-    format: (row) => semesterNameById.value.get(row.semester_id) ?? row.semester_id,
+    format: (row) => semesterNameById.value.get(row.semesterId) ?? row.semesterId,
   },
   { field: 'quota', header: 'Kuota', sortable: true },
   { field: 'duration', header: 'Durasi', sortable: true },
-  { field: 'parallel', header: 'Paralel' },
 ])
 
 const importEndpoints: ImportEndpoint[] = [
@@ -61,13 +64,11 @@ const downloadItems: DownloadItem[] = [
 async function load() {
   loading.value = true
   try {
-    const [activities, courseList, semesterList] = await Promise.all([
+    const [activities, semesterList] = await Promise.all([
       activitiesService.list(),
-      coursesService.list(),
       semestersService.list(),
     ])
     rows.value = activities
-    courses.value = courseList
     semesters.value = semesterList
   } finally {
     loading.value = false

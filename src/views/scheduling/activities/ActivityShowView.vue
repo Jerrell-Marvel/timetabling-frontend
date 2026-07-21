@@ -3,46 +3,30 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CRUPage from '@/layout/CRUPage.vue'
 import ActivityDetail from '@/components/activities/ActivityDetail.vue'
-import {
-  activitiesService,
-  coursesService,
-  lecturersService,
-  roomsService,
-  roomTypesService,
-  semestersService,
-} from '@/services'
+import { activitiesService, activityConstraintsService, semestersService } from '@/services'
 import { semesterLabel } from '@/types'
-import type { Activity } from '@/types'
+import type { Activity, ActivityConstraint } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const activity = ref<Activity | null>(null)
-const courseName = ref<string>()
+const constraints = ref<ActivityConstraint[]>([])
 const semesterName = ref<string>()
-const roomNames = ref<string[]>()
-const roomTypeNames = ref<string[]>()
-const lecturerNames = ref<string[]>()
 
 onMounted(async () => {
-  const data = await activitiesService.get(Number(route.params.id))
-  activity.value = data
+  const id = Number(route.params.id)
 
-  const [course, semester, rooms, roomTypes, lecturers] = await Promise.all([
-    coursesService.get(data.course_id),
-    semestersService.get(data.semester_id),
-    roomsService.list(),
-    roomTypesService.list(),
-    lecturersService.list(),
+  // The activity response already carries course/type names, and each constraint
+  // carries a resolved `valueLabel` — so two requests cover the whole page.
+  const [data, constraintRows] = await Promise.all([
+    activitiesService.get(id),
+    activityConstraintsService.byActivity(id),
   ])
-  courseName.value = course.name
+  activity.value = data
+  constraints.value = constraintRows
+
+  const semester = await semestersService.get(data.semesterId)
   semesterName.value = semesterLabel(semester)
-  roomNames.value = rooms.filter((r) => data.room_ids.includes(r.id!)).map((r) => r.roomCode)
-  roomTypeNames.value = roomTypes
-    .filter((rt) => data.room_type_ids.includes(rt.id!))
-    .map((rt) => rt.name)
-  lecturerNames.value = lecturers
-    .filter((l) => data.lecturer_ids.includes(l.id!))
-    .map((l) => l.name)
 })
 </script>
 
@@ -58,11 +42,8 @@ onMounted(async () => {
     <ActivityDetail
       v-if="activity"
       :activity="activity"
-      :course-name="courseName"
+      :constraints="constraints"
       :semester-name="semesterName"
-      :room-names="roomNames"
-      :room-type-names="roomTypeNames"
-      :lecturer-names="lecturerNames"
     />
   </CRUPage>
 </template>
