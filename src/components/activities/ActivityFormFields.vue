@@ -36,7 +36,9 @@ const modelValue = defineModel<ActivityFormModel>({ required: true })
       <h3 class="text-sm font-semibold text-surface-800 mb-3">Data Aktivitas</h3>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Semester</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Semester<span class="text-red-500 ml-1">*</span></label
+          >
           <Select
             v-model="modelValue.semesterId"
             :options="semesterOptions"
@@ -47,7 +49,9 @@ const modelValue = defineModel<ActivityFormModel>({ required: true })
           <small v-if="errors?.semesterId" class="text-red-500">{{ errors.semesterId }}</small>
         </div>
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Matakuliah</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Matakuliah<span class="text-red-500 ml-1">*</span></label
+          >
           <Select
             v-model="modelValue.courseId"
             :options="courseOptions"
@@ -59,7 +63,9 @@ const modelValue = defineModel<ActivityFormModel>({ required: true })
           <small v-if="errors?.courseId" class="text-red-500">{{ errors.courseId }}</small>
         </div>
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Jenis Aktivitas</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Jenis Aktivitas<span class="text-red-500 ml-1">*</span></label
+          >
           <Select
             v-model="modelValue.activityTypeId"
             :options="activityTypeOptions"
@@ -72,24 +78,32 @@ const modelValue = defineModel<ActivityFormModel>({ required: true })
           </small>
         </div>
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Kelas</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Kelas<span class="text-red-500 ml-1">*</span></label
+          >
           <InputText v-model="modelValue.courseClass" maxlength="3" class="w-full" />
           <small v-if="errors?.courseClass" class="text-red-500">{{ errors.courseClass }}</small>
         </div>
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Sesi</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Sesi<span class="text-red-500 ml-1">*</span></label
+          >
           <InputNumber v-model="modelValue.courseSession" :min="1" class="w-full" />
           <small v-if="errors?.courseSession" class="text-red-500">
             {{ errors.courseSession }}
           </small>
         </div>
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Durasi (jam)</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Durasi (jam)<span class="text-red-500 ml-1">*</span></label
+          >
           <InputNumber v-model="modelValue.duration" :min="1" class="w-full" />
           <small v-if="errors?.duration" class="text-red-500">{{ errors.duration }}</small>
         </div>
         <div>
-          <label class="block text-sm font-medium text-surface-700 mb-1">Kuota</label>
+          <label class="block text-sm font-medium text-surface-700 mb-1"
+            >Kuota<span class="text-red-500 ml-1">*</span></label
+          >
           <InputNumber v-model="modelValue.quota" :min="1" class="w-full" />
           <small v-if="errors?.quota" class="text-red-500">{{ errors.quota }}</small>
         </div>
@@ -122,8 +136,7 @@ const modelValue = defineModel<ActivityFormModel>({ required: true })
             LECTURER rows to hard, so offering a toggle would be a lie.
           -->
           <p class="text-xs text-surface-400 mt-1">
-            Pengajar selalu bersifat Hard Constraint dan tidak dapat diubah menjadi Soft
-            Constraint.
+            Pengajar selalu bersifat Hard Constraint dan tidak dapat diubah menjadi Soft Constraint.
           </p>
         </div>
 

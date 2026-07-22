@@ -3,9 +3,9 @@ import type { Id } from './common'
 /**
  * `SettingableType.dbValue` — the keys of the constraints map.
  *
- * NOTE: `activityType` has no listing endpoint on this backend (there is no
- * ActivityType controller), so the UI cannot render a picker for it. Its values
- * are read from the detail response and written back untouched.
+ * These are the legacy camelCase discriminators stored in
+ * `setting_constraints.settingable_type`, NOT API paths — `activityType` values
+ * are listed from `/api/activity-types`.
  */
 export type SettingableType =
   | 'roomType'
@@ -44,6 +44,11 @@ export interface Setting {
  *
  * A type with no stored rows comes back **expanded to its full default set**,
  * so what you receive is always the effective selection.
+ *
+ * For a non-admin the response is additionally narrowed to their faculty's
+ * `jurusan` and `activity` values. That view is read-only by construction —
+ * setting writes are ADMIN-only — so it can never be saved back and shrink the
+ * stored setting.
  */
 export interface SettingDetail extends Setting {
   constraints: SettingConstraints
@@ -52,8 +57,9 @@ export interface SettingDetail extends Setting {
 /**
  * Write shape — mirrors `SettingRequest`.
  *
- * WARNING: `update` hard-deletes every constraint row and re-inserts from this
- * payload, so a type omitted here silently becomes "all". Always send all types.
+ * Only the types present in `constraints` or `selectAll` are rewritten; a type
+ * absent from both is left untouched rather than widened to "all". Sending all
+ * seven (as `SettingFormView` does) keeps the form the single source of truth.
  */
 export interface SettingPayload {
   name: string

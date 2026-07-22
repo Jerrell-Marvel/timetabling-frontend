@@ -54,17 +54,21 @@ export const schedulingRoutes: RouteRecordRaw[] = [
     component: SettingIndexView,
     meta: { title: 'Pengaturan Penjadwalan' },
   },
+  // Reads are open (the index above), but writes are `@PreAuthorize("hasRole('ADMIN')")`
+  // server-side — without this guard a faculty user reaches the form and only discovers
+  // that on submit. It also keeps the setting-detail faculty scoping safe: a non-admin
+  // sees a narrowed selection, which must never be saved back.
   {
     path: 'settings/create',
     name: 'settings.create',
     component: SettingFormView,
-    meta: { title: 'Tambah Pengaturan' },
+    meta: { title: 'Tambah Pengaturan', requiresAdmin: true },
   },
   {
     path: 'settings/:id/edit',
     name: 'settings.edit',
     component: SettingFormView,
-    meta: { title: 'Edit Pengaturan' },
+    meta: { title: 'Edit Pengaturan', requiresAdmin: true },
   },
 
   // --- Timetable (Penjadwalan) ---

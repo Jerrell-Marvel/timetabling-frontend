@@ -2,6 +2,7 @@
 export { lecturersService } from './lecturers'
 export { lecturerTimesService } from './lecturerTimes'
 export { jurusansService } from './jurusans'
+export { konsentrasiService } from './konsentrasi'
 export { coursesService } from './courses'
 export { roomsService } from './rooms'
 export { activitiesService } from './activities'

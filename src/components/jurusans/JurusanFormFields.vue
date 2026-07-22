@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import type { Jenjang, JurusanPayload, Konsentrasi } from '@/types'
+import type { Jenjang, JurusanPayload, KonsentrasiDraft } from '@/types'
+import RepeatableRows from '@/components/controls/RepeatableRows.vue'
 
-defineProps<{
-  errors?: Record<string, string>
-  /**
-   * Existing concentrations, shown read-only on edit. `JurusanRequest` carries
-   * no concentrations and the backend exposes no Konsentrasi write endpoint,
-   * so these cannot be added/edited here (the old Prodi form's editable list
-   * was writing to an endpoint that does not exist).
-   */
-  konsentrasi?: Konsentrasi[]
-  isEdit?: boolean
-}>()
+defineProps<{ errors?: Record<string, string> }>()
 
 const modelValue = defineModel<JurusanPayload>({ required: true })
+
+/**
+ * Concentrations, edited as their own list and reconciled by
+ * `konsentrasiService.reconcile` on save (they are NOT part of `JurusanRequest`).
+ */
+const konsentrasi = defineModel<KonsentrasiDraft[]>('konsentrasi', { required: true })
 
 const jenjangOptions: { label: string; value: Jenjang }[] = [
   { label: 'D3', value: 'D3' },
@@ -21,13 +18,19 @@ const jenjangOptions: { label: string; value: Jenjang }[] = [
   { label: 'S2', value: 'S2' },
   { label: 'S3', value: 'S3' },
 ]
+
+function newKonsentrasi(): KonsentrasiDraft {
+  return { konsentrasi: '' }
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-5">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Nama</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Nama<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.name" class="w-full" :invalid="!!errors?.name" />
         <Message v-if="errors?.name" severity="error" size="small" variant="simple">{{
           errors.name
@@ -41,7 +44,9 @@ const jenjangOptions: { label: string; value: Jenjang }[] = [
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Jenjang</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Jenjang<span class="text-red-500 ml-1">*</span></label
+        >
         <Select
           v-model="modelValue.jenjang"
           :options="jenjangOptions"
@@ -62,15 +67,20 @@ const jenjangOptions: { label: string; value: Jenjang }[] = [
       </div>
     </div>
 
-    <div v-if="isEdit">
+    <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Konsentrasi</h3>
-      <ul v-if="konsentrasi?.length" class="flex flex-col gap-1">
-        <li v-for="k in konsentrasi" :key="k.id" class="text-sm text-surface-700">
-          {{ k.konsentrasi }}
-        </li>
-      </ul>
-      <p v-else class="text-sm text-surface-400">Tidak ada data.</p>
-      <small class="text-surface-400">Hanya baca — belum ada endpoint untuk mengubah konsentrasi.</small>
+      <RepeatableRows
+        v-model="konsentrasi"
+        :new-row="newKonsentrasi"
+        add-label="Tambah Konsentrasi"
+      >
+        <template #row="{ row }">
+          <InputText v-model="row.konsentrasi" class="w-full" placeholder="Nama konsentrasi" />
+        </template>
+      </RepeatableRows>
+      <small class="text-surface-400">
+        Konsentrasi yang sudah dipakai mata kuliah tidak dapat dihapus atau diganti namanya.
+      </small>
     </div>
   </div>
 </template>

@@ -4,21 +4,26 @@
  * persists (`setting_constraints.settingable_type`). Values are kept as the
  * **strings** the API uses — stringified ids, hours 7–23, day indexes 1–6.
  *
- * Not rendered: `activityType`. The backend has no ActivityType listing
- * endpoint, so there is no source for its labels; the parent passes its values
- * through untouched instead of showing a picker that cannot be populated.
+ * All seven types are rendered. `activityType` is a flat checkbox group rather
+ * than a tree, matching legacy `<multiple-check-component name="activityType">`.
  */
+import type { TreeNode } from 'primevue/treenode'
 import type { Option, SettingFormState } from '@/types'
 import CheckboxGroup from '@/components/controls/CheckboxGroup.vue'
+import HierarchySelector from '@/components/controls/HierarchySelector.vue'
 
 defineProps<{
   errors?: Record<string, string>
   /** Disabled on edit — the backend ignores `semesterId` on update. */
   isEdit?: boolean
   semesterOptions: Option[]
-  jurusanOptions: Option<string>[]
-  roomOptions: Option<string>[]
+  /** Fakultas → Jurusan, mirroring the legacy `createJurusanTree`. */
+  jurusanTree: TreeNode[]
+  /** Unit → Gedung → Lantai → Ruangan, mirroring the legacy `createRoomTree`. */
+  roomTree: TreeNode[]
   roomTypeOptions: Option<string>[]
+  /** Flat, unscoped — legacy `provideActivityTypeData()` used a plain `ActivityType::get()`. */
+  activityTypeOptions: Option<string>[]
   activityOptions: Option<string>[]
 }>()
 
@@ -44,7 +49,9 @@ const waktuOptions: Option<string>[] = Array.from({ length: 17 }, (_, i) => {
 <template>
   <div class="flex flex-col gap-5">
     <div>
-      <label class="block text-sm font-medium text-surface-700 mb-1">Nama Pengaturan</label>
+      <label class="block text-sm font-medium text-surface-700 mb-1"
+        >Nama Pengaturan<span class="text-red-500 ml-1">*</span></label
+      >
       <InputText v-model="modelValue.name" class="w-full max-w-md" :invalid="!!errors?.name" />
       <Message v-if="errors?.name" severity="error" size="small" variant="simple">{{
         errors.name
@@ -74,10 +81,15 @@ const waktuOptions: Option<string>[] = Array.from({ length: 17 }, (_, i) => {
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Jurusan</h3>
+      <HierarchySelector v-model="modelValue.constraints.jurusan" :options="jurusanTree" />
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-surface-800 mb-2">Tipe Aktivitas</h3>
       <CheckboxGroup
-        v-model="modelValue.constraints.jurusan"
-        :options="jurusanOptions"
-        select-all-label="Pilih Semua Jurusan"
+        v-model="modelValue.constraints.activityType"
+        :options="activityTypeOptions"
+        select-all-label="Pilih Semua Tipe Aktivitas"
       />
     </div>
 
@@ -92,16 +104,7 @@ const waktuOptions: Option<string>[] = Array.from({ length: 17 }, (_, i) => {
 
     <div>
       <h3 class="text-sm font-semibold text-surface-800 mb-2">Ruangan</h3>
-      <MultiSelect
-        v-model="modelValue.constraints.room"
-        :options="roomOptions"
-        option-label="label"
-        option-value="value"
-        filter
-        display="chip"
-        placeholder="Pilih ruangan"
-        class="w-full"
-      />
+      <HierarchySelector v-model="modelValue.constraints.room" :options="roomTree" />
     </div>
 
     <div>

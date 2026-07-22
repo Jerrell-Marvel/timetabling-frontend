@@ -42,7 +42,9 @@ async function handleSubmit() {
     </template>
 
     <div class="max-w-md">
-      <label class="block text-sm font-medium text-surface-700 mb-1">Nama</label>
+      <label class="block text-sm font-medium text-surface-700 mb-1"
+        >Nama<span class="text-red-500 ml-1">*</span></label
+      >
       <InputText v-model="activityType.name" class="w-full" :invalid="!!errors.name" />
       <Message v-if="errors.name" severity="error" size="small" variant="simple">{{
         errors.name

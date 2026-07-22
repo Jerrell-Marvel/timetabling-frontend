@@ -4,8 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import CRUPage from '@/layout/CRUPage.vue'
 import JurusanFormFields from '@/components/jurusans/JurusanFormFields.vue'
 import { useApiForm } from '@/composables/useApiForm'
-import { jurusansService } from '@/services'
-import type { JurusanPayload, Konsentrasi } from '@/types'
+import { jurusansService, konsentrasiService } from '@/services'
+import type { JurusanPayload, Konsentrasi, KonsentrasiDraft } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,7 +14,11 @@ const id = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEdit = computed(() => id.value !== null)
 
 const form = reactive<JurusanPayload>({ name: '', faculty: '', jenjang: null, color: null })
-const konsentrasi = ref<Konsentrasi[]>([])
+
+/** Editable drafts, plus the server state they are diffed against on save. */
+const konsentrasi = ref<KonsentrasiDraft[]>([])
+const originalKonsentrasi = ref<Konsentrasi[]>([])
+
 const { errors, processing, submit } = useApiForm()
 
 onMounted(async () => {
@@ -29,13 +33,22 @@ onMounted(async () => {
   form.faculty = data.faculty ?? ''
   form.jenjang = data.jenjang
   form.color = data.color
-  konsentrasi.value = konsentrasiList
+
+  originalKonsentrasi.value = konsentrasiList
+  konsentrasi.value = konsentrasiList.map((k) => ({ id: k.id, konsentrasi: k.konsentrasi }))
 })
 
 async function handleSubmit() {
-  await submit(() =>
-    isEdit.value ? jurusansService.update(id.value!, form) : jurusansService.create(form),
-  )
+  await submit(async () => {
+    // The jurusan must exist before its concentrations can reference it, so on
+    // create we save it first and only then reconcile.
+    const saved = isEdit.value
+      ? await jurusansService.update(id.value!, form)
+      : await jurusansService.create(form)
+
+    await konsentrasiService.reconcile(saved.id, konsentrasi.value, originalKonsentrasi.value)
+    return saved
+  })
   router.push({ name: 'jurusans.index' })
 }
 </script>
@@ -48,12 +61,7 @@ async function handleSubmit() {
       </Message>
     </template>
 
-    <JurusanFormFields
-      :model-value="form"
-      :errors="errors"
-      :konsentrasi="konsentrasi"
-      :is-edit="isEdit"
-    />
+    <JurusanFormFields v-model="form" v-model:konsentrasi="konsentrasi" :errors="errors" />
 
     <div class="flex justify-end gap-2 mt-6">
       <Button

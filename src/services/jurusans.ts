@@ -15,7 +15,10 @@ const resource = createResource<Jurusan, JurusanPayload>('jurusans')
 export const jurusansService = {
   ...resource,
 
-  /** `GET /api/jurusans/{id}/konsentrasi` — read-only (no write endpoint exists). */
+  /**
+   * `GET /api/jurusans/{id}/konsentrasi` — the jurusan's concentrations.
+   * Writes go through `konsentrasiService` (`/api/konsentrasi`).
+   */
   konsentrasi: (id: Id) =>
     api.get<Konsentrasi[]>(`/jurusans/${id}/konsentrasi`).then((r) => r.data),
 }

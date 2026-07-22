@@ -55,7 +55,9 @@ async function handleLogin() {
         </Message>
 
         <div>
-          <label for="email" class="block text-sm font-medium text-surface-700 mb-2">Email</label>
+          <label for="email" class="block text-sm font-medium text-surface-700 mb-2"
+            >Email<span class="text-red-500 ml-1">*</span></label
+          >
           <InputText
             id="email"
             v-model="email"
@@ -68,7 +70,7 @@ async function handleLogin() {
 
         <div>
           <label for="password" class="block text-sm font-medium text-surface-700 mb-2"
-            >Password</label
+            >Password<span class="text-red-500 ml-1">*</span></label
           >
           <Password
             id="password"

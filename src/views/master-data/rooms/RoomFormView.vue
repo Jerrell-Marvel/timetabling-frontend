@@ -5,6 +5,7 @@ import CRUPage from '@/layout/CRUPage.vue'
 import RoomFormFields from '@/components/rooms/RoomFormFields.vue'
 import { useApiForm } from '@/composables/useApiForm'
 import { roomsService, roomTypesService } from '@/services'
+import { isClosed } from '@/types'
 import type { Option, RoomPayload } from '@/types'
 
 const route = useRoute()
@@ -52,13 +53,12 @@ onMounted(async () => {
   form.parentRoomId = data.parentRoomId ?? null
   form.roomTypeId = data.roomTypeId
   form.virtual = data.virtual ?? null
-  form.availabilities = (data.availabilities ?? []).map((a) => ({
-    // `roomId` is required by RoomAvailableRequest but ignored server-side.
-    roomId: a.roomId ?? id.value!,
-    day: a.day,
-    startTime: a.startTime,
-    endTime: a.endTime,
-  }))
+  // A room always carries all six days; closed ones come back as 00:00–00:00.
+  // The grid models "closed" as an absent row, so drop them here and let the
+  // backend re-materialize them on save.
+  form.availabilities = (data.availabilities ?? [])
+    .filter((a) => !isClosed(a))
+    .map((a) => ({ day: a.day, startTime: a.startTime, endTime: a.endTime }))
 })
 
 async function handleSubmit() {

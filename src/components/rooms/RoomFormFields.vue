@@ -3,6 +3,10 @@
  * Fields mirror `RoomRequest` exactly. The availability grid writes
  * `{ day: 1..6, startTime, endTime }` — the backend keys days numerically
  * (1 = Senin … 6 = Sabtu), not by Indonesian name.
+ *
+ * Only OPEN days are sent. The backend fills the rest in as explicit
+ * `00:00–00:00` closed rows, so unchecking a day here does not delete data — it
+ * marks the day closed. The parent strips those rows back out when loading.
  */
 import type { Option, RoomPayload } from '@/types'
 
@@ -35,8 +39,7 @@ function toggleDay(day: number, enabled: boolean) {
   if (enabled) {
     modelValue.value.availabilities = [
       ...modelValue.value.availabilities,
-      // `roomId` is a required-but-ignored placeholder; the server re-links it.
-      { roomId: 0, day, startTime: '07:00', endTime: '17:00' },
+      { day, startTime: '07:00', endTime: '18:00' },
     ]
   } else {
     modelValue.value.availabilities = modelValue.value.availabilities.filter((a) => a.day !== day)
@@ -66,56 +69,77 @@ function fromDate(value: unknown): string {
   <div class="flex flex-col gap-5">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Kode</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Kode<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.roomCode" class="w-full" :invalid="!!errors?.roomCode" />
         <Message v-if="errors?.roomCode" severity="error" size="small" variant="simple">{{
           errors.roomCode
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Nama</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Nama<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.name" class="w-full" :invalid="!!errors?.name" />
         <Message v-if="errors?.name" severity="error" size="small" variant="simple">{{
           errors.name
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Unit Pemilik</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Unit Pemilik<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.unitOwner" class="w-full" :invalid="!!errors?.unitOwner" />
         <Message v-if="errors?.unitOwner" severity="error" size="small" variant="simple">{{
           errors.unitOwner
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Lokasi</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Lokasi<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.location" class="w-full" :invalid="!!errors?.location" />
         <Message v-if="errors?.location" severity="error" size="small" variant="simple">{{
           errors.location
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Gedung</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Gedung<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.building" class="w-full" :invalid="!!errors?.building" />
         <Message v-if="errors?.building" severity="error" size="small" variant="simple">{{
           errors.building
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Lantai</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Lantai<span class="text-red-500 ml-1">*</span></label
+        >
         <InputText v-model="modelValue.floor" class="w-full" :invalid="!!errors?.floor" />
         <Message v-if="errors?.floor" severity="error" size="small" variant="simple">{{
           errors.floor
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Kapasitas</label>
-        <InputNumber v-model="modelValue.capacity" :min="0" class="w-full" :invalid="!!errors?.capacity" />
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Kapasitas<span class="text-red-500 ml-1">*</span></label
+        >
+        <InputNumber
+          v-model="modelValue.capacity"
+          :min="0"
+          class="w-full"
+          :invalid="!!errors?.capacity"
+        />
         <Message v-if="errors?.capacity" severity="error" size="small" variant="simple">{{
           errors.capacity
         }}</Message>
       </div>
       <div>
-        <label class="block text-sm font-medium text-surface-700 mb-1">Tipe Ruangan</label>
+        <label class="block text-sm font-medium text-surface-700 mb-1"
+          >Tipe Ruangan<span class="text-red-500 ml-1">*</span></label
+        >
         <Select
           v-model="modelValue.roomTypeId"
           :options="roomTypeOptions"

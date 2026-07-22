@@ -26,13 +26,29 @@ export interface JurusanPayload {
 }
 
 /**
- * `GET /api/jurusans/{id}/konsentrasi` — mirrors `KonsentrasiResponse`.
- *
- * Read-only: `JurusanRequest` carries no concentrations and the backend exposes
- * no Konsentrasi write endpoint, so these cannot be created/edited from the UI.
+ * `GET /api/jurusans/{id}/konsentrasi` (and `/api/konsentrasi`) — mirrors
+ * `KonsentrasiResponse`.
  */
 export interface Konsentrasi {
   id: Id
   jurusanId: Id
+  konsentrasi: string
+}
+
+/**
+ * Write shape for `POST`/`PUT /api/konsentrasi` — mirrors `KonsentrasiRequest`.
+ *
+ * Concentrations are their own resource, not a field of `JurusanRequest`: Laravel
+ * rewrote the whole `kons[]` array on every Prodi save, which destroyed row ids.
+ * The Jurusan form reconciles add/edit/remove against the loaded list instead.
+ */
+export interface KonsentrasiPayload {
+  jurusanId: Id
+  konsentrasi: string
+}
+
+/** One row of the Jurusan form's concentration editor (unsaved rows have no `id`). */
+export interface KonsentrasiDraft {
+  id?: Id
   konsentrasi: string
 }

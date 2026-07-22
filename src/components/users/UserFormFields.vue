@@ -13,14 +13,18 @@ const modelValue = defineModel<UserPayload>({ required: true })
 <template>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
-      <label class="block text-sm font-medium text-surface-700 mb-1">Nama</label>
+      <label class="block text-sm font-medium text-surface-700 mb-1"
+        >Nama<span class="text-red-500 ml-1">*</span></label
+      >
       <InputText v-model="modelValue.name" class="w-full" :invalid="!!errors?.name" />
       <Message v-if="errors?.name" severity="error" size="small" variant="simple">{{
         errors.name
       }}</Message>
     </div>
     <div>
-      <label class="block text-sm font-medium text-surface-700 mb-1">Email</label>
+      <label class="block text-sm font-medium text-surface-700 mb-1"
+        >Email<span class="text-red-500 ml-1">*</span></label
+      >
       <InputText
         v-model="modelValue.email"
         type="email"
@@ -34,6 +38,7 @@ const modelValue = defineModel<UserPayload>({ required: true })
     <div>
       <label class="block text-sm font-medium text-surface-700 mb-1">
         Password{{ isEdit ? ' (kosongkan jika tidak diubah)' : '' }}
+        <span v-if="!isEdit" class="text-red-500 ml-1">*</span>
       </label>
       <Password
         v-model="modelValue.password"

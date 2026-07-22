@@ -24,6 +24,19 @@ export interface Course {
   color?: string
 }
 
+/**
+ * `GET /api/courses/{id}/constraints` — mirrors `CourseConstraintsResponse`.
+ *
+ * Served separately from the course itself so the listing stays one query;
+ * `courseIds` already merges both directions of the symmetric relation.
+ */
+export interface CourseConstraints {
+  /** Ids of courses this one may not be scheduled alongside ("Matakuliah Bentrok"). */
+  courseIds: Id[]
+  /** Semesters 1–8 it may not be scheduled alongside ("Semester Bentrok"). */
+  semesters: number[]
+}
+
 /** Write shape for `POST`/`PUT /api/courses` — mirrors `CourseRequest`. */
 export interface CoursePayload {
   code: string
@@ -32,6 +45,13 @@ export interface CoursePayload {
   tingkat?: number | null
   konsentrasi?: string | null
   jurusanId: Id
+  /**
+   * Conflict sets, replace-all. Omitting a field (`undefined`) leaves that side
+   * untouched server-side; `[]` clears it. Always send both from the form so what
+   * the user sees is what is stored.
+   */
+  courseConstraints?: Id[]
+  semesterConstraints?: number[]
 }
 
 /** Lightweight course info returned by `GET /api/courses/{id}/info`. */

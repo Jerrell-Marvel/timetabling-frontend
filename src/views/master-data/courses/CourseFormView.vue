@@ -20,14 +20,18 @@ const form = reactive<CoursePayload>({
   tingkat: null,
   konsentrasi: null,
   jurusanId: 0,
+  // Always sent, so the form is the single source of truth for both conflict sets.
+  courseConstraints: [],
+  semesterConstraints: [],
 })
 const jurusans = ref<Jurusan[]>([])
 const { errors, processing, submit } = useApiForm()
 
 onMounted(async () => {
-  const [jurusanList, data] = await Promise.all([
+  const [jurusanList, data, constraints] = await Promise.all([
     jurusansService.list(),
     id.value !== null ? coursesService.get(id.value) : Promise.resolve(null),
+    id.value !== null ? coursesService.constraints(id.value) : Promise.resolve(null),
   ])
   jurusans.value = jurusanList
 
@@ -39,6 +43,10 @@ onMounted(async () => {
     form.tingkat = data.tingkat
     form.konsentrasi = data.konsentrasi ?? null
     form.jurusanId = data.jurusanId
+  }
+  if (constraints) {
+    form.courseConstraints = constraints.courseIds
+    form.semesterConstraints = constraints.semesters
   }
 })
 
@@ -58,7 +66,12 @@ async function handleSubmit() {
       </Message>
     </template>
 
-    <CourseFormFields :model-value="form" :errors="errors" :jurusans="jurusans" />
+    <CourseFormFields
+      v-model="form"
+      :errors="errors"
+      :jurusans="jurusans"
+      :current-course-id="id"
+    />
 
     <div class="flex justify-end gap-2 mt-6">
       <Button

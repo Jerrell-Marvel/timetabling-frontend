@@ -15,19 +15,23 @@ export interface RoomAvailability {
 
 /**
  * Availability as accepted by `RoomRequest.availabilities`
- * (`RoomAvailableRequest`).
+ * (`RoomAvailableItemRequest`).
  *
- * WARNING: `roomId` is `@NotNull` even though `RoomService.replaceAvailabilities`
- * ignores it and re-links each row to the owning room. On create there is no id
- * yet, so a placeholder must still be sent or the request fails validation with
- * `availabilities[i].roomId: roomId is required`.
+ * Carries no `roomId`: the owning room is the one being saved, and the service
+ * re-links every row to it. Only OPEN days need sending — the backend writes the
+ * remaining days as explicit `00:00–00:00` closed rows, so a room always has all
+ * six. Sending an empty list on CREATE seeds the default Mon–Sat 07:00–18:00.
  */
 export interface RoomAvailabilityPayload {
-  roomId: Id
   /** 1–6 (`@Min(1) @Max(6)`). */
   day: number
   startTime: string
   endTime: string
+}
+
+/** A day whose window is `00:00–00:00` is closed, not open at midnight. */
+export function isClosed(a: Pick<RoomAvailability, 'startTime' | 'endTime'>): boolean {
+  return a.startTime === a.endTime
 }
 
 /** Room (`rooms`), mirroring `RoomResponse` verbatim. */

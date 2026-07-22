@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Room, RoomAvailability } from '@/types'
+import { isClosed, type Room, type RoomAvailability } from '@/types'
 
 defineProps<{
   room: Room
@@ -11,7 +11,9 @@ defineProps<{
 const DAY_LABELS = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
 function formatSlot(a: RoomAvailability): string {
-  return `${DAY_LABELS[a.day] ?? '-'}: ${a.startTime} - ${a.endTime}`
+  const label = DAY_LABELS[a.day] ?? '-'
+  // Every room carries all six days; a closed one is stored as 00:00–00:00.
+  return isClosed(a) ? `${label}: Tutup` : `${label}: ${a.startTime} - ${a.endTime}`
 }
 </script>
 
